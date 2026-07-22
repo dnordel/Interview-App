@@ -2,8 +2,8 @@ module:
   name: staffing_change_stage
   language: python
   path: src/staffing_change_stage.py
-  version: 2.2.0
-  description: Compatibility wrapper preserving Staffing change-stage operations over the shared domain-neutral immutable event and receipt engine.
+  version: 2.3.0
+  description: Compatibility wrapper preserving Staffing change-stage operations and destination-proof reconciliation over the shared domain-neutral immutable event and receipt engine.
 functions:
 - name: _utc_now_iso
   locked: false
@@ -51,6 +51,15 @@ classes:
     returns: {type: 'list[StaffingChangeEvent]'}
     exceptions: [ValueError, OSError]
     side_effects: Recursively reads and validates event and receipt artifacts, deduplicates identical Dropbox conflict copies by event ID, fails closed on differing copies or causal cycles, holds descendants whose predecessor has not arrived, and returns causally ordered events excluding the logical source database and events already acknowledged by the target replica.
+  - name: reconciliation_for
+    inputs:
+      replica: {type: str, required: true}
+      operations: {type: 'set[str]', required: true}
+      destination_proofs: {type: 'set[str]', required: true}
+      school: {type: str, required: false, default: ''}
+    returns: {type: 'list[StaffingChangeEvent]'}
+    exceptions: [ValueError, OSError]
+    side_effects: Returns acknowledged peer events in requested operations when their target Staffing SQLite database lacks an atomic destination proof, enabling safe verification and replay.
   - name: acknowledge
     inputs:
       event_id: {type: str, required: true}

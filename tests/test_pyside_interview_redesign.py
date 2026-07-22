@@ -65,6 +65,11 @@ def _pyside_window_on_page(model, page_name: str):
     return window
 
 
+def _load_interview_workspace(window):
+    window.staffing_v2_dashboard.show_external_page("interviews")
+    return window
+
+
 def test_offer_pdf_conversion_accepts_existing_non_empty_pdf(tmp_path: Path) -> None:
     pdf_path = tmp_path / "approved.pdf"
     pdf_path.write_bytes(b"%PDF-1.4\n")
@@ -83,6 +88,143 @@ def test_offer_pdf_conversion_reports_missing_docx_and_legacy_helper_stays_quiet
     assert converted == ""
     assert "Offer DOCX was not found" in error
     assert pyside_interview_app._ensure_offer_pdf_path(str(missing_docx)) == ""
+
+
+def test_generate_offer_artifacts_uses_current_settings_when_saved_paths_are_from_another_machine(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    template_path = tmp_path / "current-template.docx"
+    template_path.write_bytes(b"template")
+    output_dir = tmp_path / "current-offers"
+    settings_path = tmp_path / "school-offer-settings.json"
+    SchoolOfferSettingsStore(settings_path).save(
+        {
+            "Palmdale": {
+                "full_time_template": str(template_path),
+                "part_time_template": str(tmp_path / "part-time-template.docx"),
+                "offer_output_dir": str(output_dir),
+            }
+        }
+    )
+    monkeypatch.setattr(pyside_interview_app, "SCHOOL_OFFER_SETTINGS_PATH", settings_path)
+
+    rendered: list[tuple[Path, Path, str]] = []
+
+    def fake_render_approved_offer(source, destination, data, *, approval_date):
+        rendered.append((Path(source), Path(destination), data.position))
+        Path(destination).write_bytes(b"approved docx")
+        return Path(destination)
+
+    def fake_convert(path: str) -> tuple[str, str]:
+        pdf_path = Path(path).with_suffix(".pdf")
+        pdf_path.write_bytes(b"%PDF-1.4\n")
+        return str(pdf_path), ""
+
+    monkeypatch.setattr(
+        pyside_interview_app.OfferLetterService,
+        "render_approved_offer",
+        fake_render_approved_offer,
+    )
+    monkeypatch.setattr(pyside_interview_app, "_convert_offer_docx_to_pdf_path", fake_convert)
+    window = object.__new__(getattr(pyside_interview_app, "PySide" + "InterviewWindow"))
+    application = SimpleNamespace(school="Palmdale", position="Infant/Toddler")
+    candidate = SimpleNamespace(legal_name="Test Candidate")
+    version = SimpleNamespace(
+        terms={
+            "template_path": "C:/Users/Other/Dropbox/template.docx",
+            "output_dir": "C:/Users/Other/Dropbox/offers",
+            "hourly_pay": "19.00",
+            "weekly_hours": "40",
+            "start_time": "8:00 AM",
+            "end_time": "5:00 PM",
+            "honorific": "Ms.",
+            "position": "Teacher",
+            "pto": "80",
+            "pto2": "160",
+        }
+    )
+
+    docx_path, pdf_path = window._generate_hiring_offer_artifacts(
+        application,
+        candidate,
+        version,
+    )
+
+    assert rendered == [(template_path.resolve(), docx_path, "Teacher")]
+    assert docx_path.parent == output_dir.resolve()
+    assert docx_path.is_file()
+    assert pdf_path == docx_path.with_suffix(".pdf")
+    assert pdf_path.is_file()
+
+
+def test_generate_offer_artifacts_uses_sql_template_when_dropbox_file_is_unavailable(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    history_path = tmp_path / "interview_history.sqlite3"
+    template_path = tmp_path / "Dropbox" / "template.docx"
+    template_path.parent.mkdir()
+    Document().save(template_path)
+    store = pyside_interview_app.HiringPipelineStore(history_path)
+    store.snapshot_offer_template(
+        school="Palmdale",
+        template_kind="full_time",
+        source_path=template_path,
+    )
+    template_path.unlink()
+    output_dir = tmp_path / "offers"
+
+    rendered_templates: list[Path] = []
+
+    def fake_render_approved_offer(source, destination, _data, *, approval_date):
+        rendered_templates.append(Path(source))
+        Path(destination).write_bytes(b"approved docx")
+        return Path(destination)
+
+    def fake_convert(path: str) -> tuple[str, str]:
+        pdf_path = Path(path).with_suffix(".pdf")
+        pdf_path.write_bytes(b"%PDF-1.4\n")
+        return str(pdf_path), ""
+
+    monkeypatch.setattr(
+        pyside_interview_app.OfferLetterService,
+        "render_approved_offer",
+        fake_render_approved_offer,
+    )
+    monkeypatch.setattr(pyside_interview_app, "_convert_offer_docx_to_pdf_path", fake_convert)
+    monkeypatch.setattr(
+        pyside_interview_app,
+        "resolve_offer_template_path",
+        lambda *_args, **_kwargs: template_path,
+    )
+    monkeypatch.setattr(
+        pyside_interview_app,
+        "SCHOOL_OFFER_SETTINGS_PATH",
+        tmp_path / "missing-school-settings.json",
+    )
+
+    window = object.__new__(getattr(pyside_interview_app, "PySide" + "InterviewWindow"))
+    window.model = SimpleNamespace(history_path=history_path)
+    application = SimpleNamespace(school="Palmdale", position="Infant/Toddler")
+    candidate = SimpleNamespace(legal_name="Test Candidate")
+    version = SimpleNamespace(
+        terms={
+            "template_path": str(template_path),
+            "output_dir": str(output_dir),
+            "hourly_pay": "19.00",
+            "weekly_hours": "40",
+            "start_time": "8:00 AM",
+            "end_time": "5:00 PM",
+            "honorific": "Ms.",
+        }
+    )
+
+    docx_path, pdf_path = window._generate_hiring_offer_artifacts(application, candidate, version)
+
+    assert rendered_templates[0].parent.name == "offer-template-cache"
+    assert docx_path.is_file()
+    assert pdf_path.is_file()
 
 
 def test_review_offer_approval_preserves_docx_when_pdf_conversion_fails(
@@ -269,6 +411,223 @@ def test_review_offer_can_change_pay_and_approve_without_candidate_email(
     ]
     assert versions[1].terms["hourly_pay"] == "25.50"
     assert versions[1].send_status == "pending"
+
+
+def test_manual_offer_review_uses_preserved_existing_candidate_facts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def prepare(_application, _candidate, version):
+        docx_path = tmp_path / f"offer-v{version.version_number}.docx"
+        pdf_path = tmp_path / f"offer-v{version.version_number}.pdf"
+        docx_path.write_bytes(b"offer")
+        pdf_path.write_bytes(b"offer")
+        return docx_path, pdf_path
+
+    service = pyside_interview_app.HiringWorkflowService(
+        pyside_interview_app.HiringPipelineStore(tmp_path / "history.sqlite3"),
+        prepare_offer_artifacts=prepare,
+    )
+    offer = service.create_calculated_external_offer(
+        legal_name="Maya Patel",
+        email="maya@example.com",
+        phone="",
+        school="Palmdale",
+        position_id="teacher",
+        qualification={
+            "has_degree": True,
+            "degree_type": "BA",
+            "degree_in_ece": True,
+            "ece_units_completed": None,
+            "total_units_completed": None,
+            "years_experience": 6,
+        },
+        terms={
+            "weekly_hours": "40",
+            "initial_interview_score": 88,
+            "director_rating": "4.5",
+            "requested_pay_raw": "$24.50 per hour",
+            "proposed_classroom": "Chef",
+        },
+        actor="Admin",
+    )
+    application = service.store.get_application(offer.application_id)
+
+    class FakeApprovalDialog:
+        def __init__(self, **values: Any) -> None:
+            assert values["review_details"] == {
+                "Name": "Maya Patel",
+                "Initial Interview Score": "88%",
+                "Director Rating": "4.5",
+                "Degree": "BA",
+                "Years of Experience": "6",
+                "Requested Pay": "$24.50 per hour",
+                "Offer Amount": "$22.50 per hour",
+                "Classroom": "Chef",
+                "Hours": "40 weekly",
+            }
+
+        def exec(self) -> bool:
+            return False
+
+        def close(self) -> None:
+            pass
+
+    monkeypatch.setattr(pyside_interview_app, "HiringOfferApprovalDialog", FakeApprovalDialog)
+    window = object.__new__(getattr(pyside_interview_app, "PySide" + "InterviewWindow"))
+    window.hiring_v2_page = SimpleNamespace(_set_action_state=lambda *_args: None)
+    window._notification_service = lambda: SimpleNamespace(
+        render_candidate_event_preview=lambda *_args: "Subject: Offer"
+    )
+    window.window = None
+    window.QtCore = window.QtPdf = window.QtPdfWidgets = SimpleNamespace()
+    window.QtWidgets = SimpleNamespace(
+        QMessageBox=SimpleNamespace(warning=lambda *_args: pytest.fail("Review must not warn."))
+    )
+
+    window._review_hiring_offer_approval(service, application)
+
+
+def test_manual_offer_prefill_reads_completed_director_interview(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    staffing_path = tmp_path / "staffing.sqlite3"
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", staffing_path)
+    store = pyside_interview_app.StaffingStore(staffing_path)
+    store.initialize()
+    store.seed_assignment(
+        school="Palmdale",
+        classroom="Harmony 1",
+        position_name="Teacher 1",
+        position_type="Teacher",
+        status="need_now",
+    )
+    staffing = pyside_interview_app.StaffingService(store)
+    referral = staffing.upsert_director_candidate_referral(
+        history_id="hist-director-prefill",
+        candidate_name="Maya Patel",
+        school="Palmdale",
+        position="Teacher",
+        interviewer_rating=8.5,
+        interviewer_outcome="hire",
+        interview_date="2026-07-20",
+        candidate_email="maya@example.com",
+    )
+    staffing.record_director_interview(
+        referral.id,
+        director_name="Avery Director",
+        completed_date="2026-07-21",
+        rating=4.75,
+        decision="hire",
+        decision_notes="Strong fit.",
+        proposed_shift_start="7:30 AM",
+        proposed_shift_end="4:30 PM",
+        proposed_classroom="Harmony 1",
+        offer_position_id="teacher",
+    )
+    window = object.__new__(getattr(pyside_interview_app, "PySide" + "InterviewWindow"))
+    application = SimpleNamespace(history_id="hist-director-prefill", school="Palmdale")
+
+    assert window._director_interview_offer_prefill(application) == {
+        "director_rating": "4.75",
+        "proposed_classroom": "Harmony 1",
+        "start_time": "7:30 AM",
+        "end_time": "4:30 PM",
+        "position_id": "teacher",
+    }
+
+
+def test_review_offer_can_correct_degree_in_ece_and_approve_recalculated_pay(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def prepare(_application, _candidate, version):
+        docx_path = tmp_path / f"offer-v{version.version_number}.docx"
+        pdf_path = tmp_path / f"offer-v{version.version_number}.pdf"
+        docx_path.write_bytes(f"pay={version.terms['hourly_pay']}".encode())
+        pdf_path.write_bytes(f"pay={version.terms['hourly_pay']}".encode())
+        return docx_path, pdf_path
+
+    service = pyside_interview_app.HiringWorkflowService(
+        pyside_interview_app.HiringPipelineStore(tmp_path / "history.sqlite3"),
+        prepare_offer_artifacts=prepare,
+    )
+    original = service.create_calculated_external_offer(
+        legal_name="Allison Example",
+        email="",
+        phone="",
+        school="Palmdale",
+        position_id="teacher",
+        qualification={
+            "has_degree": True,
+            "degree_type": "AA",
+            "degree_in_ece": False,
+            "ece_units_completed": "18",
+            "total_units_completed": None,
+            "years_experience": 4,
+        },
+        terms={
+            "weekly_hours": "40",
+            "director_rating": "4.5",
+            "requested_pay_raw": "$21 per hour",
+            "proposed_classroom": "Infant/Toddler",
+        },
+        actor="Admin",
+    )
+    application = service.store.get_application(original.application_id)
+
+    class FakeApprovalDialog:
+        def __init__(self, **values: Any) -> None:
+            assert values["hourly_pay"] == "19.00"
+            assert values["degree_in_ece"] is False
+
+        def exec(self) -> bool:
+            return True
+
+        def approver_name(self) -> str:
+            return "Executive"
+
+        def hourly_pay(self) -> str:
+            return "19.00"
+
+        def change_pay_requested(self) -> bool:
+            return False
+
+        def degree_in_ece(self) -> bool:
+            return True
+
+        def qualification_change_requested(self) -> bool:
+            return True
+
+        def close(self) -> None:
+            pass
+
+    monkeypatch.setattr(pyside_interview_app, "HiringOfferApprovalDialog", FakeApprovalDialog)
+    window = object.__new__(getattr(pyside_interview_app, "PySide" + "InterviewWindow"))
+    window.hiring_v2_page = SimpleNamespace(
+        _set_action_state=lambda *_args: None,
+        refresh=lambda: None,
+    )
+    window._notification_service = lambda: SimpleNamespace(
+        render_candidate_event_preview=lambda *_args: "Subject: Offer"
+    )
+    window.window = None
+    window.QtCore = window.QtPdf = window.QtPdfWidgets = SimpleNamespace()
+    window.QtWidgets = SimpleNamespace(
+        QMessageBox=SimpleNamespace(warning=lambda *_args: pytest.fail("Review must not warn."))
+    )
+
+    window._review_hiring_offer_approval(service, application)
+
+    versions = service.store.list_offer_versions(application.application_id)
+    assert [(item.version_number, item.status) for item in versions] == [
+        (1, "superseded"),
+        (2, "approved"),
+    ]
+    assert versions[1].terms["qualification_snapshot"]["degree_in_ece"] is True
+    assert versions[1].terms["pay_calculation"]["career_lattice_level"] == 6
+    assert versions[1].terms["hourly_pay"] == "20.50"
 
 
 def test_send_hiring_offer_prompts_for_email_and_delivers(tmp_path: Path) -> None:
@@ -1082,8 +1441,7 @@ def test_pyside_candidates_owns_roster_pipeline_history_and_legacy_interview_act
         "Delete Saved Draft",
     }
     interviews = window.staffing_v2_dashboard.external_pages["interviews"]
-    assert interviews.findChild(qt_widgets.QTableWidget, "HiringV2ApplicationList") is None
-    assert interviews.findChild(qt_widgets.QPushButton, "ImportIndeedTranscriptButton") is None
+    assert interviews is None
     window.window.close()
     app.processEvents()
 
@@ -1185,6 +1543,47 @@ def test_pyside_staffing_v2_hiring_live_focus_rail_scenario(
     window._set_hiring_focus_mode(False)
     assert dashboard.staffing_sidebar.width() == 252
     assert dashboard.dashboard_nav_button.isEnabled()
+    window.window.close()
+    app.processEvents()
+
+
+@pytest.mark.pyside_gui
+def test_pyside_staffing_v2_defers_hiring_workspace_until_first_navigation_scenario(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qt_widgets = pytest.importorskip("PySide6.QtWidgets")
+    app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
+    seed_path = tmp_path / "staffing_seed.json"
+    seed_path.write_text('{"schools":[]}', encoding="utf-8")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", seed_path)
+    monkeypatch.setattr(pyside_interview_app, "NOTIFICATION_RULES_PATH", tmp_path / "notifications.sqlite3")
+    model = build_interview_redesign_model(
+        rubric_path=_write_test_rubric(tmp_path),
+        overrides_path=_write_test_overrides(tmp_path),
+        history_path=tmp_path / "interview_history.sqlite3",
+        school_options=["Hawthorne"],
+    )
+
+    window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    dashboard = window.staffing_v2_dashboard
+
+    assert not hasattr(window, "hiring_v2_page")
+    assert dashboard.external_pages["interviews"] is None
+    assert dashboard.external_pages["candidates"] is None
+    assert dashboard.external_pages["offers"] is None
+
+    dashboard.show_external_page("candidates")
+    first_workspace = window.hiring_v2_page
+    assert dashboard.external_pages["candidates"] is not None
+
+    dashboard.dashboard_nav_button.click()
+    dashboard.show_external_page("offers")
+    assert window.hiring_v2_page is first_workspace
+    assert dashboard.external_pages["offers"] is first_workspace.offers_widget
+
     window.window.close()
     app.processEvents()
 
@@ -1875,6 +2274,7 @@ Speaker 0: I noticed the child was upset and helped them name the feeling.
         encoding="utf-8",
     )
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    window.staffing_v2_dashboard.show_external_page("candidates")
     monkeypatch.setattr(
         window,
         "_collect_indeed_transcript_import_request",
@@ -2319,6 +2719,7 @@ def test_candidate_screen_regenerate_notes_restores_structured_report_content_sc
         school_options=["Palmdale"],
     )
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    window.staffing_v2_dashboard.show_external_page("candidates")
     warnings: list[str] = []
     monkeypatch.setattr(
         window.QtWidgets.QMessageBox,
@@ -2351,8 +2752,8 @@ def test_pyside_show_schedules_recording_interface_preload_once(tmp_path: Path, 
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     scheduled = []
 
-    def _single_shot(_delay, callback):
-        scheduled.append(callback)
+    def _single_shot(delay, callback):
+        scheduled.append((delay, callback))
 
     monkeypatch.setattr(window.QtCore.QTimer, "singleShot", _single_shot)
     monkeypatch.setattr(window.window, "showMaximized", lambda: None)
@@ -2360,8 +2761,9 @@ def test_pyside_show_schedules_recording_interface_preload_once(tmp_path: Path, 
     window.show()
     window.show()
 
-    assert window._preload_recording_interface_async in scheduled
-    assert scheduled.count(window._preload_recording_interface_async) == 1
+    assert scheduled.count(
+        (pyside_interview_app.PYSIDE_RECORDING_PRELOAD_DELAY_MS, window._preload_recording_interface_async)
+    ) == 1
     window.window.close()
     app.processEvents()
 
@@ -2379,6 +2781,7 @@ def test_pyside_home_delete_saved_draft_requires_confirmation(tmp_path: Path, mo
     draft_path.parent.mkdir()
     draft_path.write_text('{"schema":"pyside_interview_draft.v1"}', encoding="utf-8")
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    _load_interview_workspace(window)
     monkeypatch.setattr(pyside_interview_app, "latest_pyside_draft_path", lambda _drafts_dir=None: draft_path)
     window._refresh_home_draft_panel()
     no = window.QtWidgets.QMessageBox.StandardButton.No
@@ -2409,6 +2812,8 @@ def test_pyside_draft_actions_live_under_candidates_not_new_interview(tmp_path: 
         school_options=["Palmdale"],
     )
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    _load_interview_workspace(window)
+    window.staffing_v2_dashboard.show_external_page("candidates")
 
     start_buttons = {
         button.text() for button in window.interview_tabs.widget(_INTERVIEW_HOME_TAB_INDEX).findChildren(qt_widgets.QPushButton)
@@ -2562,6 +2967,7 @@ def test_pyside_recording_starts_on_begin_for_intro_audio_check(tmp_path: Path, 
         school_options=["Palmdale"],
     )
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    _load_interview_workspace(window)
     starts: list[str] = []
     monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: starts.append("start"))
 
@@ -2589,6 +2995,7 @@ def test_pyside_recording_start_failure_shows_audio_device_warning(tmp_path: Pat
         school_options=["Palmdale"],
     )
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    _load_interview_workspace(window)
     monkeypatch.setattr(pyside_interview_app.sys, "platform", "win32")
     monkeypatch.setattr(pyside_interview_app, "resolve_default_windows_system_device", lambda: "Wrong Output Device")
     monkeypatch.setattr(
@@ -2633,6 +3040,7 @@ def test_pyside_begin_uses_selected_setup_system_audio_source(tmp_path: Path, mo
         school_options=["Palmdale"],
     )
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    _load_interview_workspace(window)
     monkeypatch.setattr(pyside_interview_app.sys, "platform", "win32")
     monkeypatch.setattr(pyside_interview_app, "list_windows_dshow_audio_devices", lambda: ["Selected Cable"])
     monkeypatch.setattr(pyside_interview_app, "resolve_default_windows_system_device", lambda: "Default Cable")
@@ -2673,6 +3081,7 @@ def test_pyside_intro_audio_check_warns_on_blank_transcription(tmp_path: Path, m
     )
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
+    _load_interview_workspace(window)
     window.home_candidate_input.setText("Latoya Nugent")
     window._begin_selected_interview()
 
@@ -2702,6 +3111,7 @@ def test_pyside_intro_audio_preflight_warns_without_blocking_active_interview(
         school_options=["Palmdale"],
     )
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    _load_interview_workspace(window)
     monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
     window.home_candidate_input.setText("Latoya Nugent")
     window._begin_selected_interview()
@@ -2738,6 +3148,7 @@ def test_pyside_intro_audio_check_ignores_interviewer_only_segments(tmp_path: Pa
     )
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
+    _load_interview_workspace(window)
     window.home_candidate_input.setText("Latoya Nugent")
     window._begin_selected_interview()
 
@@ -2761,6 +3172,7 @@ def test_pyside_system_audio_route_check_warns_when_capture_is_silent(tmp_path: 
     )
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
+    _load_interview_workspace(window)
     window.home_candidate_input.setText("Latoya Nugent")
     window._begin_selected_interview()
     window.session.save_answer_and_advance(notes="Intro read.")
@@ -3212,6 +3624,7 @@ def test_pyside_window_runs_due_notification_schedule_on_startup(tmp_path: Path,
     monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "staffing.sqlite3")
 
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    monkeypatch.setattr(window.QtCore.QTimer, "singleShot", lambda _delay, callback: callback())
     window._schedule_startup_notifications()
     app.processEvents()
 
@@ -3375,6 +3788,7 @@ def test_pyside_last_question_footer_finalizes_and_shows_complete_home(tmp_path:
         window.review_status_label.setText("Interview finalized: fake.docx")
 
     monkeypatch.setattr(window, "_generate_interview_notes_from_session", _fake_generate)
+    _load_interview_workspace(window)
     window.home_candidate_input.setText("Latoya Nugent")
     window._begin_selected_interview()
 
@@ -3433,6 +3847,7 @@ def test_pyside_next_marks_new_question_at_click_boundary(tmp_path: Path, monkey
     ticks = iter([100.0, 105.0, 109.0])
     monkeypatch.setattr(pyside_interview_app.time, "monotonic", lambda: next(ticks))
 
+    _load_interview_workspace(window)
     window.home_candidate_input.setText("Latoya Nugent")
     window._begin_selected_interview()
     window.recording_started_monotonic = 100.0
@@ -3517,6 +3932,7 @@ def test_pyside_last_scored_question_routes_to_review_before_transcription(tmp_p
     )
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
+    _load_interview_workspace(window)
     window.home_candidate_input.setText("Latoya Nugent")
     window._begin_selected_interview()
 
@@ -3563,6 +3979,7 @@ def test_pyside_finalize_returns_while_recording_transcription_finishes(tmp_path
     )
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     monkeypatch.setattr(window, "_start_pyside_interview_recording", lambda: None)
+    _load_interview_workspace(window)
     window.home_candidate_input.setText("Latoya Nugent")
     window._begin_selected_interview()
     while window.session.active_question() is not None:
@@ -3621,6 +4038,7 @@ def test_finalize_success_immediately_refreshes_candidate_history_scenario(
         school_options=["Palmdale"],
     )
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
+    _load_interview_workspace(window)
     assert window.hiring_v2_page.candidates_table.rowCount() == 0
     InterviewHistoryStore(history_path).append(
         {
@@ -4257,10 +4675,17 @@ def test_pyside_window_show_opens_main_window_maximized() -> None:
     window._fit_window_to_available_screen = lambda *, fill_available=False: calls.append(f"fit:{fill_available}")
     window._schedule_startup_notifications = lambda: calls.append("schedule_notifications")
     window._schedule_recording_interface_preload = lambda: calls.append("schedule_recording_preload")
+    window._schedule_onboarding_warmup = lambda: calls.append("schedule_onboarding_warmup")
 
     window.show()
 
-    assert calls == ["fit:True", "showMaximized", "schedule_notifications", "schedule_recording_preload"]
+    assert calls == [
+        "fit:True",
+        "showMaximized",
+        "schedule_onboarding_warmup",
+        "schedule_notifications",
+        "schedule_recording_preload",
+    ]
 
 def test_pyside_window_show_primes_window_to_available_screen_before_maximize() -> None:
     window_class = getattr(pyside_interview_app, "PySide" + "InterviewWindow")
@@ -4330,6 +4755,7 @@ def test_pyside_window_show_primes_window_to_available_screen_before_maximize() 
     window.window = FakeWindow()
     window._schedule_startup_notifications = lambda: None
     window._schedule_recording_interface_preload = lambda: None
+    window._schedule_onboarding_warmup = lambda: None
 
     window.show()
 
@@ -4369,7 +4795,41 @@ def test_pyside_window_schedules_startup_notifications_once_after_show() -> None
     window._schedule_startup_notifications()
     window._schedule_startup_notifications()
 
-    assert calls == ["timer:0", "notifications"]
+    assert calls == [
+        f"timer:{pyside_interview_app.PYSIDE_NOTIFICATION_STARTUP_DELAY_MS}",
+        "notifications",
+    ]
+
+
+def test_pyside_window_schedules_onboarding_core_warmup_once_after_show() -> None:
+    window = pyside_interview_app.PySideInterviewWindow.__new__(pyside_interview_app.PySideInterviewWindow)
+    calls: list[str] = []
+
+    class FakeTimer:
+        @staticmethod
+        def singleShot(delay_ms: int, callback) -> None:
+            calls.append(f"timer:{delay_ms}")
+            callback()
+
+    class FakeQtCore:
+        QTimer = FakeTimer
+
+    class FakeHost:
+        def ensure_onboarding_workspace(self) -> None:
+            calls.append("onboarding")
+
+    window.QtCore = FakeQtCore
+    window.staffing_v2_host = FakeHost()
+    window._onboarding_warmup_scheduled = False
+
+    window._schedule_onboarding_warmup()
+    window._schedule_onboarding_warmup()
+
+    assert calls == [
+        f"timer:{pyside_interview_app.PYSIDE_ONBOARDING_WARMUP_DELAY_MS}",
+        "onboarding",
+    ]
+
 
 def test_pyside_window_fit_keeps_maximized_state_intact() -> None:
     window = pyside_interview_app.PySideInterviewWindow.__new__(pyside_interview_app.PySideInterviewWindow)
@@ -9353,14 +9813,16 @@ def test_staffing_v2_director_interviews_sync_pending_history_and_record_complet
     app.processEvents()
     assert shift_start.isVisible()
     assert shift_end.isVisible()
-    assert classroom.isVisible()
+    assert not classroom.isVisible()
     assert offer_position.isVisible()
     assert candidate_email.isVisible()
     assert candidate_phone.isVisible()
     shift_start.setText("8:00 AM")
     shift_end.setText("5:00 PM")
-    classroom.setCurrentText("Harmony 1")
     offer_position.setCurrentIndex(offer_position.findData("teacher_floater"))
+    app.processEvents()
+    assert classroom.isVisible()
+    classroom.setCurrentText("Harmony 1")
     candidate_email.setText("jordan@example.org")
     dialog.findChild(qt_widgets.QTextEdit, "StaffingV2DirectorInterviewNotes").setPlainText("Strong classroom presence.")
     dialog.findChild(qt_widgets.QPushButton, "StaffingV2DirectorInterviewSave").click()

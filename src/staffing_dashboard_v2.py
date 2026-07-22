@@ -25,6 +25,8 @@ from notification_templates import (
 )
 from staffing_models import (
     TEACHER_OFFER_POSITION_IDS,
+    director_interview_classroom_options,
+    director_interview_position_options,
     StaffingClassroom,
     StaffingDirectorCandidate,
     StaffingDirectorInterview,
@@ -6475,18 +6477,13 @@ class StaffingDashboardV2Page:
         classroom = self.QtWidgets.QComboBox()
         classroom.setObjectName("StaffingV2DirectorInterviewClassroom")
         classroom.setEditable(True)
-        classroom_names = sorted({row.classroom for row in self.rows if row.school == candidate.school and row.classroom})
+        classroom_names = director_interview_classroom_options(self.rows, candidate.school)
         classroom.addItems(classroom_names or [""])
         offer_position = self.QtWidgets.QComboBox()
         offer_position.setObjectName("StaffingV2DirectorInterviewOfferPosition")
-        offer_position.addItem("Select offer position", None)
-        offer_position_labels = {
-            "lead_teacher": "Lead Teacher",
-            "teacher": "Teacher",
-            "teacher_floater": "Teacher/Floater",
-        }
-        for position_id in TEACHER_OFFER_POSITION_IDS:
-            offer_position.addItem(offer_position_labels[position_id], position_id)
+        offer_position.addItem("Select proposed position", None)
+        for position_id, label in director_interview_position_options(self.rows, candidate.school):
+            offer_position.addItem(label, position_id)
         candidate_email = self.QtWidgets.QLineEdit(candidate.candidate_email)
         candidate_email.setObjectName("StaffingV2DirectorInterviewCandidateEmail")
         candidate_phone = self.QtWidgets.QLineEdit(candidate.candidate_phone)
@@ -6511,18 +6508,21 @@ class StaffingDashboardV2Page:
         form_grid.addWidget(field_row("Decision", decision), 3, 0)
         form_grid.addWidget(follow_up, 4, 0)
         hire_only_fields: list[Any] = []
+        classroom_field_row: Any | None = None
         for row_index, (object_name, label, control) in enumerate(
             (
                 ("StaffingV2DirectorInterviewShiftStartRow", "Proposed Shift Start", shift_start),
                 ("StaffingV2DirectorInterviewShiftEndRow", "Proposed Shift End", shift_end),
                 ("StaffingV2DirectorInterviewClassroomRow", "Proposed Classroom", classroom),
-                ("StaffingV2DirectorInterviewOfferPositionRow", "Offer Position", offer_position),
+                ("StaffingV2DirectorInterviewOfferPositionRow", "Proposed Position", offer_position),
             )
         ):
             row = field_row(label, control, object_name)
             form_grid.addWidget(row, row_index, 1)
             hire_only_fields.append(row)
-        contact_row = 3
+            if object_name == "StaffingV2DirectorInterviewClassroomRow":
+                classroom_field_row = row
+        contact_row = 4
         if not candidate.candidate_email:
             email_row = field_row(
                 "Candidate Email",
@@ -6548,8 +6548,14 @@ class StaffingDashboardV2Page:
             is_hire = decision.currentText() == "Hire"
             for field in hire_only_fields:
                 field.setVisible(is_hire)
+            is_teacher_position = offer_position.currentData() in TEACHER_OFFER_POSITION_IDS
+            if classroom_field_row is not None:
+                classroom_field_row.setVisible(is_hire and is_teacher_position)
+            if not is_teacher_position:
+                classroom.setCurrentText("")
 
         decision.currentTextChanged.connect(sync_hire_only_fields)
+        offer_position.currentIndexChanged.connect(sync_hire_only_fields)
         sync_hire_only_fields()
 
         info, info_layout = self._dialog_section("StaffingV2DialogInfo")

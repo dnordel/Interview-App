@@ -126,6 +126,9 @@ class StaffingDashboardHost:
         self.onboarding_scheduler: OnboardingAutomaticReminderScheduler | None = None
         self.onboarding_sync_timer: Any | None = None
         self.onboarding_paths = OnboardingPaths.from_user_artifacts(Path(notification_store_path).parent)
+        self._notification_store_path = Path(notification_store_path)
+        self._onboarding_store_path = Path(onboarding_store_path) if onboarding_store_path is not None else None
+        self._onboarding_vault = onboarding_vault
         enabled_schools = {str(school or "").strip().casefold() for school in onboarding_pilot_schools}
         rollout_path = (
             Path(onboarding_rollout_path)
@@ -133,115 +136,152 @@ class StaffingDashboardHost:
             else self.onboarding_paths.root / "pilot" / "evidence.jsonl"
         )
         enabled_schools.update(school.casefold() for school in enabled_director_schools(rollout_path))
-        onboarding_enabled = access.role == "admin" or access.school_scope.casefold() in enabled_schools
-        if onboarding_enabled:
-            migration_schools = (access.school_scope,) if access.role == "director" else ()
-            migrate_legacy_onboarding_artifacts(self.onboarding_paths, schools=migration_schools)
-            onboarding_path = Path(onboarding_store_path) if onboarding_store_path is not None else self._default_onboarding_store_path(notification_store_path)
-            vault = onboarding_vault or self._resolve_onboarding_vault(self.onboarding_paths.root)
-            self.onboarding_store = OnboardingStore(onboarding_path, vault=vault)
-            replica = "admin" if access.role == "admin" else f"director:{access.school_scope.casefold()}"
-            self.onboarding_sync = OnboardingSyncCoordinator(
-                store=self.onboarding_store,
-                stage=OnboardingChangeStage(self.onboarding_paths.change_stage),
-                vault=vault,
-                replica=replica,
-                school_scope=access.school_scope if access.role == "director" else "",
-                conflict_resolver=self._resolve_onboarding_sync_conflict,
-                artifact_root=self.onboarding_paths.encrypted_files,
-            )
-            self.onboarding_sync.replay_pending()
-            director_resolver = StaffingDirectorResolver(store)
-            device_cache_path = self._onboarding_device_cache_path(self.onboarding_paths.keyring)
-            artifact_vault = EncryptedArtifactVault(
-                self.onboarding_paths.encrypted_files,
-                device_cache_path.parent / "temp" / device_cache_path.stem,
-                vault=vault,
-            )
-            artifact_vault.cleanup_stale()
-            shared_artifacts = Path(notification_store_path).parent
-            email_settings_path = shared_artifacts / "email_account_settings.json"
-            directory_path = shared_artifacts / "notification_directory.json"
+        self._onboarding_enabled = access.role == "admin" or access.school_scope.casefold() in enabled_schools
+        if self._onboarding_enabled:
+            self._register_lazy_onboarding_pages()
 
-            def dispatch_onboarding_notification(
-                event_type: str, payload: dict[str, str], idempotency_key: str
-            ) -> object:
-                return NotificationService(
-                    store=NotificationStore(notification_store_path),
-                    email_settings=load_email_account_settings(email_settings_path),
-                    directory=load_notification_directory(directory_path),
-                ).emit_event(event_type, payload, idempotency_key)
+    def _register_lazy_onboarding_pages(self) -> None:
+        self.page.register_external_section("onboarding", "ONBOARDING")
+        for page_id, label, factory_key in OnboardingDashboardV2Workspace._PAGES:
+            if factory_key == "templates" and self.access.role != "admin":
+                continue
+            self.page.register_external_page(
+                "onboarding",
+                page_id,
+                label,
+                provider=lambda key=factory_key: self._onboarding_page_widget(key),
+                before_leave=self._before_leaving_onboarding,
+            )
 
-            onboarding_service = OnboardingService(
-                self.onboarding_store,
-                OnboardingAccess(
-                    role=access.role,
-                    actor=access.actor,
-                    school_scope=access.school_scope,
-                ),
-                sync=self.onboarding_sync,
+    def _before_leaving_onboarding(self) -> bool:
+        workspace = self.onboarding_workspace
+        return True if workspace is None else bool(workspace.request_navigation_away())
+
+    def _onboarding_page_widget(self, factory_key: str) -> Any:
+        workspace = self.ensure_onboarding_workspace()
+        if workspace is None:
+            raise ValueError("Onboarding is unavailable for this staffing scope.")
+        return workspace.build_page(factory_key)
+
+    def ensure_onboarding_workspace(self) -> OnboardingDashboardV2Workspace | None:
+        if self.onboarding_workspace is not None:
+            return self.onboarding_workspace
+        if not self._onboarding_enabled:
+            return None
+        migration_schools = (self.access.school_scope,) if self.access.role == "director" else ()
+        migrate_legacy_onboarding_artifacts(self.onboarding_paths, schools=migration_schools)
+        onboarding_path = self._onboarding_store_path or self._default_onboarding_store_path(
+            self._notification_store_path
+        )
+        vault = self._onboarding_vault or self._resolve_onboarding_vault(self.onboarding_paths.root)
+        self.onboarding_store = OnboardingStore(onboarding_path, vault=vault)
+        replica = "admin" if self.access.role == "admin" else f"director:{self.access.school_scope.casefold()}"
+        self.onboarding_sync = OnboardingSyncCoordinator(
+            store=self.onboarding_store,
+            stage=OnboardingChangeStage(self.onboarding_paths.change_stage),
+            vault=vault,
+            replica=replica,
+            school_scope=self.access.school_scope if self.access.role == "director" else "",
+            conflict_resolver=self._resolve_onboarding_sync_conflict,
+            artifact_root=self.onboarding_paths.encrypted_files,
+        )
+        self.onboarding_sync.replay_pending()
+        director_resolver = StaffingDirectorResolver(self.store)
+        device_cache_path = self._onboarding_device_cache_path(self.onboarding_paths.keyring)
+        artifact_vault = EncryptedArtifactVault(
+            self.onboarding_paths.encrypted_files,
+            device_cache_path.parent / "temp" / device_cache_path.stem,
+            vault=vault,
+        )
+        artifact_vault.cleanup_stale()
+        shared_artifacts = self._notification_store_path.parent
+        email_settings_path = shared_artifacts / "email_account_settings.json"
+        directory_path = shared_artifacts / "notification_directory.json"
+
+        def dispatch_onboarding_notification(
+            event_type: str, payload: dict[str, str], idempotency_key: str
+        ) -> object:
+            return NotificationService(
+                store=NotificationStore(self._notification_store_path),
+                email_settings=load_email_account_settings(email_settings_path),
+                directory=load_notification_directory(directory_path),
+            ).emit_event(event_type, payload, idempotency_key)
+
+        onboarding_service = OnboardingService(
+            self.onboarding_store,
+            OnboardingAccess(
+                role=self.access.role,
+                actor=self.access.actor,
+                school_scope=self.access.school_scope,
+            ),
+            sync=self.onboarding_sync,
+            director_resolver=director_resolver,
+            device_cache_path=device_cache_path,
+            artifact_vault=artifact_vault,
+            notification_dispatcher=dispatch_onboarding_notification,
+        )
+        migrate_legacy_onboarding_email_account(
+            legacy_path=shared_artifacts / "interviews" / "onboarding_settings.json",
+            shared_path=email_settings_path,
+        )
+
+        def reminder_recipient(school: str, role: str) -> str:
+            configured = resolve_onboarding_role_recipient(
+                load_notification_directory(directory_path),
+                school=school,
+                role=role,
                 director_resolver=director_resolver,
-                device_cache_path=device_cache_path,
-                artifact_vault=artifact_vault,
-                notification_dispatcher=dispatch_onboarding_notification,
             )
-            migrate_legacy_onboarding_email_account(
-                legacy_path=shared_artifacts / "interviews" / "onboarding_settings.json",
-                shared_path=email_settings_path,
+            if configured:
+                return configured
+            recipient, warning = onboarding_service.resolve_owner_recipient(
+                role=role,
+                school=school,
+                admin_fallback_email=load_notification_directory(directory_path).hr_manager,
             )
-            directory = load_notification_directory(directory_path)
+            return "" if warning else recipient
 
-            def reminder_recipient(school: str, role: str) -> str:
-                configured = resolve_onboarding_role_recipient(
-                    load_notification_directory(directory_path),
-                    school=school,
-                    role=role,
-                    director_resolver=director_resolver,
-                )
-                if configured:
-                    return configured
-                recipient, warning = onboarding_service.resolve_owner_recipient(
-                    role=role,
-                    school=school,
-                    admin_fallback_email=load_notification_directory(directory_path).hr_manager,
-                )
-                return "" if warning else recipient
+        def reminder_sender(message: Any) -> None:
+            send_onboarding_reminder_digest(
+                load_email_account_settings(email_settings_path),
+                message,
+                rule_store=NotificationStore(self._notification_store_path),
+            )
 
-            def reminder_sender(message: Any) -> None:
-                send_onboarding_reminder_digest(
-                    load_email_account_settings(email_settings_path),
-                    message,
-                    rule_store=NotificationStore(notification_store_path),
-                )
+        def reminder_config_revision() -> str:
+            digest = hashlib.sha256()
+            for path in (email_settings_path, directory_path, self._notification_store_path):
+                digest.update(path.read_bytes() if path.is_file() else b"")
+            return digest.hexdigest()
 
-            def reminder_config_revision() -> str:
-                digest = hashlib.sha256()
-                for path in (email_settings_path, directory_path, Path(notification_store_path)):
-                    digest.update(path.read_bytes() if path.is_file() else b"")
-                return digest.hexdigest()
-
-            self.onboarding_workspace = OnboardingDashboardV2Workspace(
-                QtCore=QtCore,
-                QtWidgets=QtWidgets,
-                service=onboarding_service,
-                reminder_recipient_resolver=reminder_recipient,
+        self.onboarding_workspace = OnboardingDashboardV2Workspace(
+            QtCore=self.QtCore,
+            QtWidgets=self.QtWidgets,
+            service=onboarding_service,
+            reminder_recipient_resolver=reminder_recipient,
+            admin_fallback_email=lambda: load_notification_directory(directory_path).hr_manager,
+            reminder_sender=reminder_sender,
+            reminder_config_revision=reminder_config_revision,
+        )
+        if self.access.role == "admin":
+            self.onboarding_scheduler = OnboardingAutomaticReminderScheduler(
+                onboarding_service,
+                recipient_resolver=reminder_recipient,
                 admin_fallback_email=lambda: load_notification_directory(directory_path).hr_manager,
-                reminder_sender=reminder_sender,
-                reminder_config_revision=reminder_config_revision,
+                sender=reminder_sender,
+                config_revision=reminder_config_revision,
             )
-            if access.role == "admin":
-                self.onboarding_scheduler = OnboardingAutomaticReminderScheduler(
-                    onboarding_service,
-                    recipient_resolver=reminder_recipient,
-                    admin_fallback_email=lambda: load_notification_directory(directory_path).hr_manager,
-                    sender=reminder_sender,
-                    config_revision=reminder_config_revision,
-                )
-            self.onboarding_workspace.register_with(self.page)
-            self.onboarding_sync_timer = self.QtCore.QTimer(self.parent)
-            self.onboarding_sync_timer.setInterval(15_000)
-            self.onboarding_sync_timer.timeout.connect(self._sync_onboarding_timer)
-            self.onboarding_sync_timer.start()
+        self.onboarding_sync_timer = self.QtCore.QTimer(self.parent)
+        self.onboarding_sync_timer.setInterval(15_000)
+        self.onboarding_sync_timer.timeout.connect(self._sync_onboarding_timer)
+        self.onboarding_sync_timer.start()
+        return self.onboarding_workspace
+
+    def warm_onboarding(self) -> bool:
+        try:
+            return self.ensure_onboarding_workspace() is not None
+        except (OSError, ValueError, sqlite3.DatabaseError):
+            return False
 
     def sync_onboarding(self) -> int:
         if self.onboarding_sync is None:

@@ -376,6 +376,30 @@ def test_offer_path_resolution_selects_template_from_weekly_hours(
     assert output == dropbox_root / "HR-PMD" / "PMD Employment Offers"
 
 
+def test_offer_path_resolution_remaps_absolute_path_from_another_computer(
+    tmp_path: Path,
+) -> None:
+    dropbox_root = tmp_path / "Dropbox (Current User)"
+    base_dir = dropbox_root / "David LPL work" / "Interview Tool" / "user_artifacts"
+    settings = {
+        "Palmdale": {
+            "full_time_template": (
+                r"C:\Users\Other User\Dropbox (Old)\Dropbox\HR-PMD\PMD Employment Offers\full.docx"
+            ),
+            "part_time_template": r"C:\Users\Other User\Dropbox\HR-PMD\part.docx",
+            "offer_output_dir": (
+                r"C:\Users\Other User\Dropbox (Old)\Dropbox\HR-PMD\PMD Employment Offers"
+            ),
+        }
+    }
+
+    template = resolve_offer_template_path(base_dir, "Palmdale", 40, settings)
+    output = resolve_offer_output_dir(base_dir, "Palmdale", settings)
+
+    assert template == dropbox_root / "HR-PMD" / "PMD Employment Offers" / "full.docx"
+    assert output == dropbox_root / "HR-PMD" / "PMD Employment Offers"
+
+
 def test_resolve_interview_notes_output_dir_uses_school_setting_under_current_dropbox_root(tmp_path: Path):
     dropbox_root = tmp_path / "Dropbox (Test)"
     base_dir = dropbox_root / "App" / "user_artifacts" / "interviews"

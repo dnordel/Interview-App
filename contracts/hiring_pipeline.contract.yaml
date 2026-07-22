@@ -2,7 +2,7 @@ module:
   name: hiring_pipeline
   language: python
   path: src/hiring_pipeline.py
-  version: 1.12.0
+  version: 1.14.0
   description: Candidate-profile, application-pipeline, event-audit, calculated teacher starting pay, existing-candidate external offer cycles, editable increment-enforced pending-offer approval, delayed candidate-email delivery, offer-only deletion, and PDF-only offer lifecycle persistence.
 functions:
 - name: build_offer_notification_payload
@@ -187,7 +187,7 @@ classes:
     exceptions: []
     side_effects: none
 - name: HiringPipelineStore
-  description: Deep SQLite repository for candidate identities, application cycles, and lifecycle events.
+  description: Deep SQLite repository for candidate identities, application cycles, lifecycle events, and validated version-bound offer-template snapshots.
   locked: false
   attributes:
     history_path: {type: Path}
@@ -234,6 +234,24 @@ classes:
     returns: {type: int}
     exceptions: []
     side_effects: Reads canonical profile count for migration parity.
+  - name: snapshot_offer_template
+    inputs:
+      school: {type: str, required: true}
+      template_kind: {type: str, required: true}
+      source_path: {type: Path, required: true}
+      version_id: {type: str, required: false, default: ''}
+    returns: {type: str}
+    exceptions: [ValueError, OSError]
+    side_effects: Validates and stores a bounded Word template BLOB by SHA-256, makes it active for one school and employment type, and optionally binds it to an exact offer version.
+  - name: materialize_offer_template
+    inputs:
+      school: {type: str, required: true}
+      template_kind: {type: str, required: true}
+      destination_dir: {type: Path, required: true}
+      version_id: {type: str, required: false, default: ''}
+    returns: {type: Path}
+    exceptions: [ValueError, OSError]
+    side_effects: Reads an exact version-bound or active school-scoped template, verifies its size, SHA-256, and Word package structure, then atomically writes a safe local cache file.
   - name: archive_application
     inputs: {application_id: {type: str, required: true}}
     returns: {type: HiringApplication}
@@ -565,6 +583,15 @@ classes:
     returns: {type: OfferVersion}
     exceptions: [ValueError, OSError]
     side_effects: Enforces the configured pay increment, creates and previews a new numbered pending version with changed hourly pay, then supersedes the prior pending version only after artifact generation succeeds; the configured initial-pay cap is not applied to Admin overrides.
+  - name: revise_pending_offer_qualification
+    inputs:
+      application_id: {type: str, required: true}
+      version_id: {type: str, required: true}
+      qualification: {type: 'dict[str, Any]', required: true}
+      actor: {type: str, required: true}
+    returns: {type: OfferVersion}
+    exceptions: [ValueError, OSError]
+    side_effects: Recalculates starting pay from corrected qualifications, creates and previews a new numbered pending version with an auditable qualification/pay snapshot, then supersedes the prior pending version only after artifact generation succeeds.
   - name: approve_offer
     inputs:
       application_id: {type: str, required: true}

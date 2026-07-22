@@ -125,6 +125,31 @@ class CrossDatabaseChangeStage:
                 remaining.pop(event.id)
         return ordered
 
+    def reconciliation_for(
+        self,
+        *,
+        replica: str,
+        operations: set[str],
+        destination_proofs: set[str],
+        school: str = "",
+    ) -> list[CrossDatabaseChangeEvent]:
+        clean_replica = _required_text(replica, "Replica")
+        clean_operations = {_required_text(value, "Operation") for value in operations}
+        school_filter = str(school or "").strip()
+        events, receipts = self._load_artifacts()
+        return sorted(
+            (
+                event
+                for event in events.values()
+                if event.source_database != clean_replica
+                and event.operation in clean_operations
+                and (event.id, clean_replica) in receipts
+                and event.id not in destination_proofs
+                and (not school_filter or event.school in {school_filter, "*"})
+            ),
+            key=lambda item: (item.created_at, item.id),
+        )
+
     def acknowledge(self, event_id: str, *, replica: str) -> None:
         clean_event_id = _required_text(event_id, "Event ID")
         clean_replica = _required_text(replica, "Replica")

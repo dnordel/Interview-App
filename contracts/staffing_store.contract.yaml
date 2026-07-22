@@ -2,8 +2,8 @@ module:
   name: staffing_store
   language: python
   path: src/staffing_store.py
-  version: 0.20.0
-  description: SQLite persistence for staffing schools, classrooms, people including optional units, active status, role, current assignment summary, and permit effective-date/documentation/managed-path metadata, service-backed assignment creation and mistaken-position soft deletion, assignments with shift metadata, workbook display metadata, assignment history dashboard records, director candidate referral/interview completion and dismissal records, Dropbox-visible edit locking, pending operation queueing, required staffing indexes, and deterministic seed imports.
+  version: 0.21.0
+  description: SQLite persistence for staffing schools, classrooms, people including optional units, active status, role, current assignment summary, and permit effective-date/documentation/managed-path metadata, service-backed assignment creation and mistaken-position soft deletion, assignments with shift metadata, workbook display metadata, assignment history dashboard records, director candidate referral/interview completion and dismissal records, atomic staged-change destination proofs, Dropbox-visible edit locking, pending operation queueing, required staffing indexes, and deterministic seed imports.
 functions: []
 classes:
 - name: StaffingEditLock
@@ -38,7 +38,7 @@ classes:
     inputs: {}
     returns:
       type: None
-    side_effects: Creates staffing tables/indexes when missing and migrates workbook display, shift metadata, and person permit metadata columns including permit_document_path for existing databases; concurrent initializers tolerate only verified duplicate-column migration races and re-raise other SQL failures.
+    side_effects: Creates staffing tables/indexes, including durable staged-change destination proofs, when missing and migrates workbook display, shift metadata, and person permit metadata columns including permit_document_path for existing databases; concurrent initializers tolerate only verified duplicate-column migration races and re-raise other SQL failures.
   - name: enqueue_pending_operation
     inputs:
       operation:
@@ -466,6 +466,20 @@ classes:
     - ValueError
     - StaffingEditLock
     side_effects: Inserts or updates one completed director interview with its exact teacher offer position, captures initial-report score/outcome, and appends immutable director-interview version/audit rows without mutating assignments, classrooms, people, or assignment_history.
+  - name: list_change_delivery_proof_ids
+    inputs:
+      operation: {type: str, required: true}
+    returns: {type: 'set[str]'}
+    exceptions: [ValueError, sqlite3.Error]
+    side_effects: Initializes schema and reads durable destination event IDs for one staged operation.
+  - name: verify_and_record_director_interview_delivery
+    inputs:
+      event_id: {type: str, required: true}
+      payload: {type: 'dict[str, Any]', required: true}
+      verified_at: {type: str, required: true}
+    returns: {type: bool}
+    exceptions: [ValueError, StaffingEditLock, sqlite3.Error]
+    side_effects: Under one SQLite write transaction, verifies the exact history/school director interview and candidate contact fields or a later completed interview, then inserts an idempotent matched/superseded destination proof; returns false without proof when destination data is absent or partial.
   - name: remove_pending_director_referral_for_reconciliation
     inputs:
       history_id: {type: str, required: true}

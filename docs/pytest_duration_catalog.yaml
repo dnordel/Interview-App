@@ -86,6 +86,21 @@ entries:
   duration_source: collection_default
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_app_branding.py::test_set_windows_app_user_model_id_calls_windows_shell
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_app_branding.py::test_set_windows_app_user_model_id_skips_non_windows
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_app_branding.py::test_entrypoints_set_identity_and_icon_before_main_window_creation
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_assistant_director_role.py::test_assistant_director_track_loads_from_config_without_code_branch
   duration_seconds_n2: 0.002
   duration_source: measured
@@ -217,72 +232,72 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_candidate_report_dialog.py::test_admin_dialog_matches_report_sections_and_has_no_editable_outcome
-  duration_seconds_n2: 0.216
+  duration_seconds_n2: 0.248
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_candidate_report_dialog.py::test_admin_can_edit_skip_reason_and_approved_evaluation_flags
-  duration_seconds_n2: 0.291
+  duration_seconds_n2: 0.347
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_candidate_report_dialog.py::test_rating_edit_immediately_recalculates_score_preview
-  duration_seconds_n2: 0.316
+  duration_seconds_n2: 0.391
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_candidate_report_dialog.py::test_save_changes_validates_while_save_draft_accepts_incomplete_work
-  duration_seconds_n2: 0.282
+  duration_seconds_n2: 0.265
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_candidate_report_dialog.py::test_field_and_report_revert_restore_saved_values_without_new_version
-  duration_seconds_n2: 0.343
+  duration_seconds_n2: 0.502
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_candidate_report_dialog.py::test_validation_readiness_issue_navigates_to_missing_skip_reason
-  duration_seconds_n2: 0.25
+  duration_seconds_n2: 0.244
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_candidate_report_dialog.py::test_answer_filters_and_expand_collapse_preserve_question_state
-  duration_seconds_n2: 0.277
+  duration_seconds_n2: 0.373
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_candidate_report_dialog.py::test_keyboard_shortcuts_save_navigate_and_focus_search
-  duration_seconds_n2: 0.33
+  duration_seconds_n2: 0.344
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_candidate_report_dialog.py::test_dialog_has_window_controls_and_parent_scrim_lifecycle
-  duration_seconds_n2: 0.168
+  duration_seconds_n2: 0.315
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_candidate_report_dialog.py::test_dialog_fits_supported_dashboard_viewports
-  duration_seconds_n2: 0.234
+  duration_seconds_n2: 0.311
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_candidate_report_dialog.py::test_open_word_surfaces_os_error
-  duration_seconds_n2: 0.174
+  duration_seconds_n2: 0.327
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_candidate_report_dialog.py::test_open_word_generates_basic_notes_when_none_are_saved
-  duration_seconds_n2: 0.235
+  duration_seconds_n2: 0.257
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_candidate_report_dialog.py::test_open_word_generates_safe_default_for_non_docx_path
-  duration_seconds_n2: 0.224
+  duration_seconds_n2: 0.369
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_candidate_report_dialog.py::test_director_reopened_section_edits_only_director_fields
-  duration_seconds_n2: 0.386
+  duration_seconds_n2: 0.493
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -362,47 +377,47 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_dashboard_v2_ui.py::test_dashboard_v2_shell_registers_pages_and_collapses_to_locked_rail
-  duration_seconds_n2: 0.083
+  duration_seconds_n2: 0.105
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_dashboard_v2_ui.py::test_staffing_v2_shell_hosts_hiring_pages_and_restores_full_navigation
-  duration_seconds_n2: 0.408
+  duration_seconds_n2: 0.497
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_dashboard_v2_ui.py::test_staffing_v2_sidebar_toggle_reclaims_content_width_and_restores_labels
-  duration_seconds_n2: 0.413
+  duration_seconds_n2: 0.514
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_dashboard_v2_ui.py::test_staffing_v2_sidebar_sections_expand_collapse_and_reopen_for_active_page
-  duration_seconds_n2: 0.471
+  duration_seconds_n2: 0.566
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_dashboard_v2_ui.py::test_staffing_v2_builtin_sidebar_groups_collapse_without_losing_active_navigation
-  duration_seconds_n2: 0.388
+  duration_seconds_n2: 0.683
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_dashboard_v2_ui.py::test_staffing_v2_sidebar_uses_uniform_compact_rows_in_scrollable_navigation
-  duration_seconds_n2: 0.316
+  duration_seconds_n2: 0.563
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_dashboard_v2_ui.py::test_staffing_v2_rail_keeps_icon_and_accessible_name_for_pages_without_explicit_icon
-  duration_seconds_n2: 0.386
+  duration_seconds_n2: 0.449
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_dashboard_v2_ui.py::test_staffing_v2_settings_registration_is_lazy_and_guarded
-  duration_seconds_n2: 0.368
+  duration_seconds_n2: 0.532
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_dashboard_v2_ui.py::test_staffing_v2_external_page_provider_is_lazy_once_and_guarded
-  duration_seconds_n2: 0.39
+  duration_seconds_n2: 0.571
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -461,6 +476,16 @@ entries:
   duration_source: measured
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_director_staffing_launcher.py::test_director_requirements_include_windows_vault_dependency
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_director_staffing_launcher.py::test_director_setup_repairs_existing_environment_missing_windows_vault_dependency
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_director_staffing_launcher.py::test_director_setup_installs_docx_without_full_app_audio_installers
   duration_seconds_n2: 0.001
   duration_source: measured
@@ -487,12 +512,12 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_director_staffing_launcher.py::test_staffing_v2_forces_light_fusion_theme_for_consistent_colors
-  duration_seconds_n2: 0.087
+  duration_seconds_n2: 0.068
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_director_staffing_launcher.py::test_director_window_close_guard_cancels_or_cleans_onboarding_close
-  duration_seconds_n2: 0.084
+  duration_seconds_n2: 0.102
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -661,6 +686,26 @@ entries:
   duration_source: measured
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_hiring_pipeline.py::test_offer_template_snapshot_survives_missing_dropbox_source
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_hiring_pipeline.py::test_offer_version_uses_its_exact_template_snapshot_after_active_template_changes
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_hiring_pipeline.py::test_offer_template_version_binding_cannot_cross_school_scope
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_hiring_pipeline.py::test_offer_template_snapshot_rejects_non_word_content
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_hiring_pipeline.py::test_offer_approval_artifact_stage_promotes_previewed_bytes_unchanged
   duration_seconds_n2: 0.008
   duration_source: measured
@@ -712,6 +757,11 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_hiring_pipeline.py::test_external_offer_calculates_pay_from_qualification_snapshot
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_hiring_pipeline.py::test_correcting_pending_offer_qualification_recalculates_numbered_version
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
@@ -817,102 +867,112 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_hiring_workspace_v2.py::test_shared_candidate_editors_capture_offer_ready_identity_and_qualification
-  duration_seconds_n2: 0.151
+  duration_seconds_n2: 0.121
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_hiring_workspace_v2.py::test_shared_candidate_editors_fail_closed_on_invalid_offer_data
-  duration_seconds_n2: 0.015
+  duration_seconds_n2: 0.092
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_hiring_workspace_v2.py::test_hiring_workspace_uses_unified_pipeline_without_horizontal_page_scroll
-  duration_seconds_n2: 0.322
+  duration_seconds_n2: 0.562
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_hiring_workspace_v2.py::test_hiring_workspace_opens_with_application_detail_closed
-  duration_seconds_n2: 0.206
+  duration_seconds_n2: 0.272
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_hiring_workspace_v2.py::test_hiring_workspace_candidate_detail_opens_at_right_and_can_be_closed
-  duration_seconds_n2: 0.225
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_hiring_workspace_v2.py::test_hiring_workspace_exposes_native_interviews_candidates_and_offers_views
-  duration_seconds_n2: 0.213
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_hiring_workspace_v2.py::test_hiring_workspace_create_offer_action_submits_selected_version
-  duration_seconds_n2: 0.494
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_hiring_workspace_v2.py::test_hiring_workspace_generate_offer_button_creates_external_offer
-  duration_seconds_n2: 0.315
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_hiring_workspace_v2.py::test_generate_offer_dialog_uses_shared_capture_and_automatic_offer_terms
   duration_seconds_n2: 0.285
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
+- nodeid: tests/test_hiring_workspace_v2.py::test_hiring_workspace_exposes_native_interviews_candidates_and_offers_views
+  duration_seconds_n2: 0.304
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_hiring_workspace_v2.py::test_hiring_workspace_create_offer_action_submits_selected_version
+  duration_seconds_n2: 0.623
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_hiring_workspace_v2.py::test_hiring_workspace_generate_offer_button_creates_external_offer
+  duration_seconds_n2: 0.401
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_hiring_workspace_v2.py::test_generate_offer_dialog_uses_shared_capture_and_automatic_offer_terms
+  duration_seconds_n2: 0.212
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
 - nodeid: tests/test_hiring_workspace_v2.py::test_generate_offer_reuses_existing_candidate_and_updates_profile
-  duration_seconds_n2: 0.192
+  duration_seconds_n2: 0.369
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_hiring_workspace_v2.py::test_existing_candidate_offer_prefers_visible_report_qualification
-  duration_seconds_n2: 0.204
+  duration_seconds_n2: 0.401
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_hiring_workspace_v2.py::test_generate_offer_for_existing_candidate_preserves_review_facts
+  duration_seconds_n2: 0.674
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_hiring_workspace_v2.py::test_pending_offer_row_has_direct_review_offer_button_beside_menu
-  duration_seconds_n2: 0.395
+  duration_seconds_n2: 0.694
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_hiring_workspace_v2.py::test_offers_page_splits_pending_and_approved_tables_and_sizes_pending_rows
-  duration_seconds_n2: 0.676
+  duration_seconds_n2: 0.532
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_hiring_workspace_v2.py::test_approved_offer_without_email_has_send_offer_button
-  duration_seconds_n2: 0.59
+  duration_seconds_n2: 0.395
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_hiring_workspace_v2.py::test_offer_overflow_menu_can_delete_selected_offer_version
-  duration_seconds_n2: 0.569
+  duration_seconds_n2: 0.354
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_hiring_workspace_v2.py::test_hiring_workspace_visual_sizes_have_no_page_horizontal_scroll
-  duration_seconds_n2: 0.344
+  duration_seconds_n2: 0.44
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_hiring_workspace_v2.py::test_offer_approval_dialog_embeds_pdf_and_gates_approval
-  duration_seconds_n2: 0.105
+  duration_seconds_n2: 0.096
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_hiring_workspace_v2.py::test_offer_approval_dialog_requests_degree_in_ece_correction
+  duration_seconds_n2: 0.115
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_hiring_workspace_v2.py::test_offer_approval_dialog_shows_nine_review_details_in_three_columns
-  duration_seconds_n2: 0.12
+  duration_seconds_n2: 0.088
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_hiring_workspace_v2.py::test_hiring_interview_guide_routes_inside_hiring_workspace
-  duration_seconds_n2: 0.076
+  duration_seconds_n2: 0.084
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_hiring_workspace_v2.py::test_hiring_workspace_contextual_actions_complete_offer_lifecycle
-  duration_seconds_n2: 0.703
+  duration_seconds_n2: 1.174
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -4076,27 +4136,32 @@ entries:
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_workspace_v2.contract.yaml-src/onboarding_workspace_v2.py-request_navigation_away-contract_inputs373-OnboardingDashboardV2Workspace]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_workspace_v2.contract.yaml-src/onboarding_workspace_v2.py-build_page-contract_inputs373-OnboardingDashboardV2Workspace]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_workspace_v2.contract.yaml-src/onboarding_workspace_v2.py-request_close-contract_inputs374-OnboardingDashboardV2Workspace]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_workspace_v2.contract.yaml-src/onboarding_workspace_v2.py-request_navigation_away-contract_inputs374-OnboardingDashboardV2Workspace]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_workspace_v2.contract.yaml-src/onboarding_workspace_v2.py-refresh_after_handoff-contract_inputs375-OnboardingDashboardV2Workspace]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_workspace_v2.contract.yaml-src/onboarding_workspace_v2.py-request_close-contract_inputs375-OnboardingDashboardV2Workspace]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_workspace_v2.contract.yaml-src/onboarding_workspace_v2.py-mark_dirty-contract_inputs376-OnboardingDashboardV2Workspace]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_workspace_v2.contract.yaml-src/onboarding_workspace_v2.py-refresh_after_handoff-contract_inputs376-OnboardingDashboardV2Workspace]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_workspace_v2.contract.yaml-src/onboarding_workspace_v2.py-register_edit_session-contract_inputs377-OnboardingDashboardV2Workspace]
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_workspace_v2.contract.yaml-src/onboarding_workspace_v2.py-mark_dirty-contract_inputs377-OnboardingDashboardV2Workspace]
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_onboarding_contract_interfaces.py::test_onboarding_contract_symbol_signature_exists[contracts\\onboarding_workspace_v2.contract.yaml-src/onboarding_workspace_v2.py-register_edit_session-contract_inputs378-OnboardingDashboardV2Workspace]
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
@@ -4517,7 +4582,7 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_onboarding_pdf_mapper_v2.py::test_visual_mapper_renders_page_and_draws_moves_resizes_pdf_coordinate_box
-  duration_seconds_n2: 0.089
+  duration_seconds_n2: 0.099
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -4969,117 +5034,117 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_onboarding_workspace_v2.py::test_workspace_registers_role_scoped_lazy_onboarding_pages
-  duration_seconds_n2: 0.161
+  duration_seconds_n2: 0.325
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_onboarding_workspace_v2.py::test_workspace_task_filters_actions_kpi_and_secure_reveal_have_behavior
-  duration_seconds_n2: 0.757
+  duration_seconds_n2: 0.78
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_onboarding_workspace_v2.py::test_employee_drawer_opens_and_exports_authorized_filled_artifact
-  duration_seconds_n2: 0.247
+  duration_seconds_n2: 0.344
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_onboarding_workspace_v2.py::test_director_creates_school_employee_and_top_level_task_from_v2_pages
-  duration_seconds_n2: 0.524
+  duration_seconds_n2: 0.486
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_onboarding_workspace_v2.py::test_task_page_full_filters_and_inline_editor_update_selected_task
-  duration_seconds_n2: 0.383
+  duration_seconds_n2: 0.432
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_onboarding_workspace_v2.py::test_overview_lock_and_forget_device_controls_apply_distinct_security_actions
-  duration_seconds_n2: 0.313
+  duration_seconds_n2: 0.483
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_onboarding_workspace_v2.py::test_communications_preview_send_and_failed_only_retry_have_behavior
-  duration_seconds_n2: 0.212
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_onboarding_workspace_v2.py::test_workspace_leave_guard_save_discard_and_stay_choices_have_behavior
-  duration_seconds_n2: 0.156
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_onboarding_workspace_v2.py::test_templates_page_lists_versions_and_creates_reusable_field_inline
-  duration_seconds_n2: 0.4
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_onboarding_workspace_v2.py::test_employee_profile_drawer_saves_authorized_profile_changes
   duration_seconds_n2: 0.313
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
-- nodeid: tests/test_onboarding_workspace_v2.py::test_task_detail_adds_encrypted_comment_and_refreshes_visible_history
-  duration_seconds_n2: 0.359
+- nodeid: tests/test_onboarding_workspace_v2.py::test_workspace_leave_guard_save_discard_and_stay_choices_have_behavior
+  duration_seconds_n2: 0.259
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
-- nodeid: tests/test_onboarding_workspace_v2.py::test_leave_guard_runs_registered_save_discard_and_cleanup_callbacks
-  duration_seconds_n2: 0.167
+- nodeid: tests/test_onboarding_workspace_v2.py::test_templates_page_lists_versions_and_creates_reusable_field_inline
+  duration_seconds_n2: 0.451
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
-- nodeid: tests/test_onboarding_workspace_v2.py::test_task_drawer_adds_subtask_and_secure_attachment_then_cleans_temp
-  duration_seconds_n2: 0.55
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_onboarding_workspace_v2.py::test_overview_kpi_navigates_to_task_queue_with_matching_filter
-  duration_seconds_n2: 0.44
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_onboarding_workspace_v2.py::test_director_employee_drawer_marks_did_not_start_and_hides_admin_actions
-  duration_seconds_n2: 0.279
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_onboarding_workspace_v2.py::test_task_drawer_completes_subtask_and_edits_own_comment_revision
-  duration_seconds_n2: 0.444
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_onboarding_workspace_v2.py::test_templates_workflow_publishes_template_package_and_visual_mapping
-  duration_seconds_n2: 0.542
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_onboarding_workspace_v2.py::test_admin_templates_page_previews_and_idempotently_imports_legacy_json
-  duration_seconds_n2: 0.394
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_onboarding_workspace_v2.py::test_density_persists_and_narrow_tasks_switch_to_stacked_cards
-  duration_seconds_n2: 0.391
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_onboarding_workspace_v2.py::test_admin_employee_transfer_archive_and_typed_delete_refresh_roster
-  duration_seconds_n2: 0.371
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_onboarding_workspace_v2.py::test_employee_separation_and_retention_preview_purge_actions
+- nodeid: tests/test_onboarding_workspace_v2.py::test_employee_profile_drawer_saves_authorized_profile_changes
   duration_seconds_n2: 0.383
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
+- nodeid: tests/test_onboarding_workspace_v2.py::test_task_detail_adds_encrypted_comment_and_refreshes_visible_history
+  duration_seconds_n2: 0.447
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_onboarding_workspace_v2.py::test_leave_guard_runs_registered_save_discard_and_cleanup_callbacks
+  duration_seconds_n2: 0.273
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_onboarding_workspace_v2.py::test_task_drawer_adds_subtask_and_secure_attachment_then_cleans_temp
+  duration_seconds_n2: 0.537
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_onboarding_workspace_v2.py::test_overview_kpi_navigates_to_task_queue_with_matching_filter
+  duration_seconds_n2: 0.412
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_onboarding_workspace_v2.py::test_director_employee_drawer_marks_did_not_start_and_hides_admin_actions
+  duration_seconds_n2: 0.364
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_onboarding_workspace_v2.py::test_task_drawer_completes_subtask_and_edits_own_comment_revision
+  duration_seconds_n2: 0.478
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_onboarding_workspace_v2.py::test_templates_workflow_publishes_template_package_and_visual_mapping
+  duration_seconds_n2: 0.633
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_onboarding_workspace_v2.py::test_admin_templates_page_previews_and_idempotently_imports_legacy_json
+  duration_seconds_n2: 0.439
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_onboarding_workspace_v2.py::test_density_persists_and_narrow_tasks_switch_to_stacked_cards
+  duration_seconds_n2: 0.413
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_onboarding_workspace_v2.py::test_admin_employee_transfer_archive_and_typed_delete_refresh_roster
+  duration_seconds_n2: 0.311
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_onboarding_workspace_v2.py::test_employee_separation_and_retention_preview_purge_actions
+  duration_seconds_n2: 0.398
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
 - nodeid: tests/test_onboarding_workspace_v2.py::test_admin_task_drawer_redacts_selected_comment_with_reason
-  duration_seconds_n2: 0.424
+  duration_seconds_n2: 0.413
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_onboarding_workspace_v2.py::test_templates_page_previews_and_applies_selected_employee_upgrades
-  duration_seconds_n2: 0.589
+  duration_seconds_n2: 0.593
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -5234,57 +5299,57 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_overview_processing_to_complete_scenario
-  duration_seconds_n2: 3.849
+  duration_seconds_n2: 2.877
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_typography_stress_visual_scenario
-  duration_seconds_n2: 3.012
+  duration_seconds_n2: 2.288
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_overview_failure_wins_after_partial_history_persistence
-  duration_seconds_n2: 2.296
+  duration_seconds_n2: 2.081
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_finalize_failure_sanitizes_private_exception_text
-  duration_seconds_n2: 2.159
+  duration_seconds_n2: 1.792
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_transcript_browser_scenario
-  duration_seconds_n2: 3.271
+  duration_seconds_n2: 2.287
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_detail_edit_scenario
-  duration_seconds_n2: 6.349
+  duration_seconds_n2: 5.252
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_non_scored_detail_preserves_mark_important
-  duration_seconds_n2: 4.256
+  duration_seconds_n2: 3.139
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_actions_and_finish_scenario
-  duration_seconds_n2: 2.595
+  duration_seconds_n2: 2.357
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_export_actions_write_docx_pdf_and_utf8_txt
-  duration_seconds_n2: 1.898
+  duration_seconds_n2: 1.535
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_export_cancel_and_pdf_failure_are_safe
-  duration_seconds_n2: 2.044
+  duration_seconds_n2: 1.539
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_completed_interview.py::test_pyside_completed_finish_surfaces_draft_cleanup_failure
-  duration_seconds_n2: 1.997
+  duration_seconds_n2: 1.513
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -5298,12 +5363,37 @@ entries:
   duration_source: collection_default
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_generate_offer_artifacts_uses_current_settings_when_saved_paths_are_from_another_machine
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_generate_offer_artifacts_uses_sql_template_when_dropbox_file_is_unavailable
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_review_offer_approval_preserves_docx_when_pdf_conversion_fails
-  duration_seconds_n2: 0.09
+  duration_seconds_n2: 0.079
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_review_offer_can_change_pay_and_approve_without_candidate_email
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_manual_offer_review_uses_preserved_existing_candidate_facts
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_manual_offer_prefill_reads_completed_director_interview
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_pyside_interview_redesign.py::test_review_offer_can_correct_degree_in_ece_and_approve_recalculated_pay
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
@@ -5314,112 +5404,117 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_source_update_reload_banner_dashboard_scenario
-  duration_seconds_n2: 2.097
+  duration_seconds_n2: 1.186
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_staffing_conflict_prompt_identifies_user_and_remote_changes
-  duration_seconds_n2: 0.082
+  duration_seconds_n2: 0.081
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_new_interview_setup_scenario
-  duration_seconds_n2: 1.603
+  duration_seconds_n2: 0.967
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_new_interview_setup_matches_mockup_controls
-  duration_seconds_n2: 1.817
+  duration_seconds_n2: 1.022
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_new_interview_setup_begins_first_interview_without_contact_fields
-  duration_seconds_n2: 3.664
+  duration_seconds_n2: 1.867
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_new_interview_cancel_discards_changes_and_returns_dashboard
-  duration_seconds_n2: 1.746
+  duration_seconds_n2: 1.042
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_exit_live_interview_saves_draft_and_returns_fresh_setup
-  duration_seconds_n2: 1.968
+  duration_seconds_n2: 1.138
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_manual_audio_preflight_updates_setup_without_starting_interview
-  duration_seconds_n2: 1.869
+  duration_seconds_n2: 1.118
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_manual_audio_preflight_locks_only_duplicate_test_action
-  duration_seconds_n2: 1.798
+  duration_seconds_n2: 1.131
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_manual_audio_preflight_runs_five_seconds_and_removes_artifacts
-  duration_seconds_n2: 1.684
+  duration_seconds_n2: 1.423
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_window_close_stops_active_manual_audio_preflight
-  duration_seconds_n2: 1.71
+  duration_seconds_n2: 1.007
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_onboarding_window_close_guard_scenario
-  duration_seconds_n2: 1.849
+  duration_seconds_n2: 1.026
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_accepted_offer_handoff_refreshes_running_onboarding_workspace
-  duration_seconds_n2: 0.093
+  duration_seconds_n2: 0.071
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_cancelled_onboarding_restart_does_not_launch_replacement
-  duration_seconds_n2: 0.091
+  duration_seconds_n2: 0.076
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_window_close_stops_all_interview_capture_work
-  duration_seconds_n2: 2.003
+  duration_seconds_n2: 1.084
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_setup_audio_probe_populates_detected_source_and_readiness
-  duration_seconds_n2: 1.729
+  duration_seconds_n2: 1.055
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_begin_rejects_audio_source_that_is_no_longer_available
-  duration_seconds_n2: 1.814
+  duration_seconds_n2: 1.279
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_begin_cancels_running_manual_audio_test_before_capture
-  duration_seconds_n2: 2.088
+  duration_seconds_n2: 1.311
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_new_interview_setup_responsive_visual_scenario
-  duration_seconds_n2: 2.839
+  duration_seconds_n2: 1.888
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_candidates_owns_roster_pipeline_history_and_legacy_interview_actions
-  duration_seconds_n2: 1.785
+  duration_seconds_n2: 1.295
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_candidates_resume_button_routes_saved_draft_into_live_interview
-  duration_seconds_n2: 1.892
+  duration_seconds_n2: 1.473
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_hiring_live_focus_rail_scenario
-  duration_seconds_n2: 1.34
+  duration_seconds_n2: 1.313
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_defers_hiring_workspace_until_first_navigation_scenario
+  duration_seconds_n2: 1.295
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -5454,17 +5549,17 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_scroll_helper_relays_wheel_events_from_child_widgets
-  duration_seconds_n2: 0.092
+  duration_seconds_n2: 0.095
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_scroll_helper_relays_from_nested_item_view_without_range
-  duration_seconds_n2: 0.092
+  duration_seconds_n2: 0.079
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_application_wheel_router_does_not_retain_root
-  duration_seconds_n2: 0.069
+  duration_seconds_n2: 0.075
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -5504,67 +5599,67 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_live_footer_blocks_unrated_scored_next_and_keeps_skip_enabled
-  duration_seconds_n2: 1.473
+  duration_seconds_n2: 1.587
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_home_import_indeed_transcript_opens_rating_flow
-  duration_seconds_n2: 1.452
+  duration_seconds_n2: 1.89
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_home_import_indeed_transcript_creates_history_row_from_metadata
-  duration_seconds_n2: 1.436
+  duration_seconds_n2: 1.688
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_home_import_reuses_matching_scored_history_row
-  duration_seconds_n2: 1.369
+  duration_seconds_n2: 1.646
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_history_import_indeed_transcript_opens_review_for_existing_candidate
-  duration_seconds_n2: 1.5
+  duration_seconds_n2: 1.55
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_history_import_regenerates_basic_notes
-  duration_seconds_n2: 1.643
+  duration_seconds_n2: 1.759
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_candidate_screen_regenerate_notes_restores_structured_report_content_scenario
-  duration_seconds_n2: 1.319
+  duration_seconds_n2: 1.408
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_show_schedules_recording_interface_preload_once
-  duration_seconds_n2: 1.141
+  duration_seconds_n2: 0.731
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_home_delete_saved_draft_requires_confirmation
-  duration_seconds_n2: 1.149
+  duration_seconds_n2: 1.209
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_draft_actions_live_under_candidates_not_new_interview
-  duration_seconds_n2: 1.177
+  duration_seconds_n2: 1.619
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_back_reentry_overwrites_existing_flow_timestamp
-  duration_seconds_n2: 1.115
+  duration_seconds_n2: 0.695
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_back_reentry_overwrites_existing_flow_end_timestamp
-  duration_seconds_n2: 1.105
+  duration_seconds_n2: 0.784
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_back_reentry_next_overwrites_following_question_start
-  duration_seconds_n2: 1.414
+  duration_seconds_n2: 1.522
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -5579,37 +5674,37 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_recording_starts_on_begin_for_intro_audio_check
-  duration_seconds_n2: 1.699
+  duration_seconds_n2: 1.617
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_recording_start_failure_shows_audio_device_warning
-  duration_seconds_n2: 1.426
+  duration_seconds_n2: 1.998
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_begin_uses_selected_setup_system_audio_source
-  duration_seconds_n2: 1.426
+  duration_seconds_n2: 1.496
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_intro_audio_check_warns_on_blank_transcription
-  duration_seconds_n2: 1.333
+  duration_seconds_n2: 1.93
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_intro_audio_preflight_warns_without_blocking_active_interview
-  duration_seconds_n2: 1.429
+  duration_seconds_n2: 1.995
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_intro_audio_check_ignores_interviewer_only_segments
-  duration_seconds_n2: 1.514
+  duration_seconds_n2: 1.596
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_system_audio_route_check_warns_when_capture_is_silent
-  duration_seconds_n2: 1.54
+  duration_seconds_n2: 2.033
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -5644,22 +5739,22 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_back_then_next_preserves_answer_start_and_moves_boundary
-  duration_seconds_n2: 1.515
+  duration_seconds_n2: 1.578
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_review_screen_hides_finalize_and_offer_actions
-  duration_seconds_n2: 1.272
+  duration_seconds_n2: 1.041
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_review_screen_shows_interviewer_closeout_without_slow_outputs
-  duration_seconds_n2: 1.247
+  duration_seconds_n2: 1.35
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_completed_review_exposes_transcript_detail_for_rating_change
-  duration_seconds_n2: 1.216
+  duration_seconds_n2: 1.282
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -5674,7 +5769,7 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_window_runs_due_notification_schedule_on_startup
-  duration_seconds_n2: 1.231
+  duration_seconds_n2: 0.817
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -5699,47 +5794,47 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_last_question_footer_finalizes_and_shows_complete_home
-  duration_seconds_n2: 1.722
+  duration_seconds_n2: 1.508
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_next_marks_new_question_at_click_boundary
-  duration_seconds_n2: 1.53
+  duration_seconds_n2: 1.348
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_review_table_shows_generated_transcripts
-  duration_seconds_n2: 1.405
+  duration_seconds_n2: 1.256
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_keeps_recording_active_after_last_scored_question_navigation
-  duration_seconds_n2: 1.35
+  duration_seconds_n2: 1.306
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_last_scored_question_routes_to_review_before_transcription
-  duration_seconds_n2: 1.439
+  duration_seconds_n2: 2.323
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_finalize_returns_while_recording_transcription_finishes
-  duration_seconds_n2: 1.916
+  duration_seconds_n2: 2.181
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_finalize_success_immediately_refreshes_candidate_history_scenario
-  duration_seconds_n2: 1.231
+  duration_seconds_n2: 1.286
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_finalize_success_immediately_refreshes_director_interview_candidates_scenario
-  duration_seconds_n2: 1.37
+  duration_seconds_n2: 1.006
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_finalize_uses_inline_status_without_progress_window
-  duration_seconds_n2: 1.218
+  duration_seconds_n2: 0.809
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -5749,22 +5844,22 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_director_hire_sync_creates_one_pending_offer_with_derived_terms
-  duration_seconds_n2: 0.532
+  duration_seconds_n2: 1.064
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_director_hire_sync_migrates_existing_staffing_db_before_contact_read
-  duration_seconds_n2: 0.559
+  duration_seconds_n2: 1.101
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_review_table_updates_transcript_when_finalize_worker_reports_transcripts
-  duration_seconds_n2: 1.353
+  duration_seconds_n2: 1.263
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_completed_review_has_no_inline_score_update_or_referral_side_effect
-  duration_seconds_n2: 1.371
+  duration_seconds_n2: 1.338
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -5789,7 +5884,7 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_initial_window_fits_available_screen_after_display_scaling
-  duration_seconds_n2: 1.288
+  duration_seconds_n2: 0.781
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -5799,7 +5894,7 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_window_show_opens_main_window_maximized
-  duration_seconds_n2: 0.093
+  duration_seconds_n2: 0.091
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -5809,27 +5904,32 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_window_schedules_startup_notifications_once_after_show
-  duration_seconds_n2: 0.09
+  duration_seconds_n2: 0.11
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_window_schedules_onboarding_core_warmup_once_after_show
+  duration_seconds_n2: 0.088
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_window_fit_keeps_maximized_state_intact
-  duration_seconds_n2: 0.101
+  duration_seconds_n2: 0.069
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_window_fit_does_not_cap_normal_window_maximum_size
-  duration_seconds_n2: 0.106
+  duration_seconds_n2: 0.072
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_rating_notification_emits_for_hire_and_borderline_only
-  duration_seconds_n2: 1.285
+  duration_seconds_n2: 0.795
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_live_question_wraps_scores_inside_vertical_scroll_area
-  duration_seconds_n2: 1.478
+  duration_seconds_n2: 1.124
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -5839,133 +5939,133 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mutating_db
-  duration_seconds_n2: 2.328
+  duration_seconds_n2: 1.045
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_dashboard_scrollbars_have_scrollable_range
-  duration_seconds_n2: 1.878
+  duration_seconds_n2: 1.1
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_notification_test_missing_shared_account_opens_email_settings
-  duration_seconds_n2: 3.306
+  duration_seconds_n2: 2.231
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_candidate_notification_test_recipient_dialog
-  duration_seconds_n2: 2.91
+  duration_seconds_n2: 1.493
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_notifications_dirty_exit_choices_use_real_dialog[Save]
-  duration_seconds_n2: 3.028
+  duration_seconds_n2: 1.841
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_notifications_dirty_exit_choices_use_real_dialog[Discard]
-  duration_seconds_n2: 2.927
+  duration_seconds_n2: 1.557
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_notifications_dirty_exit_choices_use_real_dialog[Keep
     Editing]
-  duration_seconds_n2: 2.613
+  duration_seconds_n2: 1.577
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_notifications_named_delete_confirmation_controls_deletion[No]
-  duration_seconds_n2: 2.55
+  duration_seconds_n2: 1.959
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_notifications_named_delete_confirmation_controls_deletion[Yes]
-  duration_seconds_n2: 2.494
+  duration_seconds_n2: 2.057
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_notifications_grid_collapses_and_restores_actual_columns
-  duration_seconds_n2: 2.375
+  duration_seconds_n2: 2.053
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_notifications_manual_payload_uses_attachment_picker_and_unsaved_draft
-  duration_seconds_n2: 2.325
+  duration_seconds_n2: 1.506
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_notifications_manager_dashboard_scenario
-  duration_seconds_n2: 1.955
+  duration_seconds_n2: 1.543
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_notifications_filters_chips_preview_and_test_send
-  duration_seconds_n2: 2.48
+  duration_seconds_n2: 2.469
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_notifications_editor_saves_rule_changes
-  duration_seconds_n2: 2.262
+  duration_seconds_n2: 1.783
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_classrooms_dashboard_uses_new_shell_and_db_rows
-  duration_seconds_n2: 1.667
+  duration_seconds_n2: 1.262
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_add_classroom_dialog_creates_classroom_through_service
-  duration_seconds_n2: 2.278
+  duration_seconds_n2: 1.943
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_classrooms_filter_side_panel_filters_rows_without_mutating_db
-  duration_seconds_n2: 1.523
+  duration_seconds_n2: 1.884
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_classrooms_paginates_and_saves_detail_without_assignment_mutation
-  duration_seconds_n2: 2.743
+  duration_seconds_n2: 2.714
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_add_position_dialog_creates_need_now_position_through_service
-  duration_seconds_n2: 1.907
+  duration_seconds_n2: 1.487
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_add_position_submit_immediately_shows_created_position_when_filters_are_stale
-  duration_seconds_n2: 0.939
+  duration_seconds_n2: 1.942
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_delete_position_removes_accidental_director
-  duration_seconds_n2: 0.962
+  duration_seconds_n2: 1.605
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_position_detail_drawer_opens_from_position_row
-  duration_seconds_n2: 1.397
+  duration_seconds_n2: 1.182
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_position_drawer_wires_open_and_edit_actions
-  duration_seconds_n2: 1.638
+  duration_seconds_n2: 1.139
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_mark_coming_dialog_saves_through_service
-  duration_seconds_n2: 1.822
+  duration_seconds_n2: 1.147
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_mark_filled_dialog_accepts_actual_start_date
-  duration_seconds_n2: 1.432
+  duration_seconds_n2: 1.189
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_manage_filled_dialog_selects_next_workflow
-  duration_seconds_n2: 1.851
+  duration_seconds_n2: 1.17
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -5975,47 +6075,47 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_replace_today_reopens_need_now_and_clears_person
-  duration_seconds_n2: 1.585
+  duration_seconds_n2: 1.047
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_update_permit_dialog_saves_people_permit_details
-  duration_seconds_n2: 1.564
+  duration_seconds_n2: 1.112
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_mark_need_now_dialog_clears_replacement
-  duration_seconds_n2: 1.394
+  duration_seconds_n2: 0.998
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
-  duration_seconds_n2: 1.618
+  duration_seconds_n2: 1.356
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_add_person_dialog_creates_person_through_service
-  duration_seconds_n2: 1.603
+  duration_seconds_n2: 0.852
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_assignment_history_dashboard_renders_history_from_db
-  duration_seconds_n2: 2.264
+  duration_seconds_n2: 1.496
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_validation_dashboard_and_filter_drawer_use_existing_staffing_data
-  duration_seconds_n2: 2.245
+  duration_seconds_n2: 1.798
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_director_staffing_mode_uses_same_staffing_page_only
-  duration_seconds_n2: 0.537
+  duration_seconds_n2: 0.905
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_director_staffing_mode_filters_to_assigned_school
-  duration_seconds_n2: 0.647
+  duration_seconds_n2: 0.97
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -6030,87 +6130,87 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_director_staffing_mode_uses_school_specific_db_when_other_school_locked
-  duration_seconds_n2: 0.642
+  duration_seconds_n2: 0.969
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_interview_finalize_queues_director_referral_without_staffing_db_write
-  duration_seconds_n2: 1.446
+  duration_seconds_n2: 1.193
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_director_staffing_poll_imports_queued_referral_and_refreshes_gui
-  duration_seconds_n2: 0.798
+  duration_seconds_n2: 1.202
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_director_staffing_poll_imports_review_score_dismissal_and_removes_pending_referral
-  duration_seconds_n2: 0.983
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_summary_cards_follow_selected_school
-  duration_seconds_n2: 1.172
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_director_candidates_follow_admin_school_selector
-  duration_seconds_n2: 1.421
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_director_pending_table_uses_compact_readable_columns
-  duration_seconds_n2: 0.339
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_initial_refresh_automatically_fills_due_coming_position
-  duration_seconds_n2: 0.397
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_date_rollover_automatically_fills_due_coming_position
-  duration_seconds_n2: 0.422
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_edit_position_reverts_auto_filled_employee_when_delayed
-  duration_seconds_n2: 0.545
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_page_defers_hidden_subdashboard_work
-  duration_seconds_n2: 0.363
-  duration_source: measured
-  gui_heavy: true
-  placement: gui_wave_3
-- nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_lazy_views_build_once_on_navigation
   duration_seconds_n2: 1.573
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_summary_cards_follow_selected_school
+  duration_seconds_n2: 0.975
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_pyside_staffing_v2_director_candidates_follow_admin_school_selector
+  duration_seconds_n2: 1.133
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_director_pending_table_uses_compact_readable_columns
+  duration_seconds_n2: 0.641
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_initial_refresh_automatically_fills_due_coming_position
+  duration_seconds_n2: 0.58
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_date_rollover_automatically_fills_due_coming_position
+  duration_seconds_n2: 0.7
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_edit_position_reverts_auto_filled_employee_when_delayed
+  duration_seconds_n2: 0.759
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_page_defers_hidden_subdashboard_work
+  duration_seconds_n2: 0.52
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_lazy_views_build_once_on_navigation
+  duration_seconds_n2: 2.591
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_pyside_notification_editor_loads_adds_and_saves_condition_rows
-  duration_seconds_n2: 2.324
+  duration_seconds_n2: 2.077
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_director_interviews_sync_pending_history_and_record_completion
-  duration_seconds_n2: 0.855
+  duration_seconds_n2: 1.368
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_director_interviews_backfill_passed_history_rows
-  duration_seconds_n2: 0.965
+  duration_seconds_n2: 1.417
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_director_staffing_launch_queues_history_backfill_when_edit_lock_exists
-  duration_seconds_n2: 0.828
+  duration_seconds_n2: 1.245
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_interview_redesign.py::test_staffing_v2_director_interviews_delete_checked_pending_rows
-  duration_seconds_n2: 0.761
+  duration_seconds_n2: 1.517
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -6120,17 +6220,17 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_live_interview.py::test_pyside_live_introduction_screen_scenario
-  duration_seconds_n2: 1.466
+  duration_seconds_n2: 1.567
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_live_interview.py::test_pyside_live_typography_stress_visual_scenario
-  duration_seconds_n2: 2.105
+  duration_seconds_n2: 2.691
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_live_interview.py::test_pyside_live_back_button_saves_current_controls_without_advancing
-  duration_seconds_n2: 1.813
+  duration_seconds_n2: 1.996
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -6145,12 +6245,12 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_live_interview.py::test_pyside_live_non_scored_transcript_and_audio_scenario
-  duration_seconds_n2: 2.567
+  duration_seconds_n2: 2.55
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_live_interview.py::test_pyside_live_asr_failure_warning_never_exposes_exception_speech
-  duration_seconds_n2: 1.36
+  duration_seconds_n2: 1.664
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -6160,17 +6260,17 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_pyside_live_interview.py::test_pyside_live_scored_rating_and_anchor_scenario
-  duration_seconds_n2: 3.296
+  duration_seconds_n2: 3.591
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_live_interview.py::test_pyside_live_availability_page_uses_non_scored_controls_and_public_next
-  duration_seconds_n2: 1.429
+  duration_seconds_n2: 1.967
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_pyside_live_interview.py::test_pyside_live_screens_responsive_render_scenario
-  duration_seconds_n2: 3.057
+  duration_seconds_n2: 3.211
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -7180,6 +7280,11 @@ entries:
 - nodeid: tests/test_setup_and_run_contract.py::test_setup_and_run_skips_dependency_installs_when_fingerprints_are_unchanged
   duration_seconds_n2: 0.024
   duration_source: measured
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_setup_and_run_contract.py::test_setup_and_run_uses_validated_fast_path_before_setup_ui
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_setup_and_run_contract.py::test_setup_and_run_keeps_nvidia_packages_out_of_base_requirements
@@ -8628,7 +8733,7 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_source_update_monitor.py::test_source_update_banner_explains_update_and_restarts_on_click
-  duration_seconds_n2: 0.098
+  duration_seconds_n2: 0.092
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -8663,27 +8768,47 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_staffing_candidate_report_ui.py::test_pending_candidate_name_opens_report_without_changing_checkbox
-  duration_seconds_n2: 0.357
+  duration_seconds_n2: 0.473
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_candidate_report_ui.py::test_completed_candidate_name_opens_structured_report
-  duration_seconds_n2: 0.368
+  duration_seconds_n2: 0.573
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_candidate_report_ui.py::test_director_interview_dialog_uses_scrollable_two_column_layout
-  duration_seconds_n2: 0.426
+  duration_seconds_n2: 0.555
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_staffing_candidate_report_ui.py::test_director_interview_separates_school_positions_from_teacher_classrooms
+  duration_seconds_n2: 0.477
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_staffing_candidate_report_ui.py::test_director_interview_classroom_only_applies_to_teacher_positions
+  duration_seconds_n2: 0.556
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_staffing_candidate_report_ui.py::test_director_interview_offer_position_does_not_overlap_missing_contact_fields
+  duration_seconds_n2: 0.503
+  duration_source: measured
+  gui_heavy: true
+  placement: gui_wave_3
+- nodeid: tests/test_staffing_candidate_report_ui.py::test_director_interview_hire_with_missing_referral_contact_saves_from_dialog
+  duration_seconds_n2: 0.695
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_candidate_report_ui.py::test_director_interview_validation_error_stays_visible_outside_scroll_body
-  duration_seconds_n2: 0.423
+  duration_seconds_n2: 0.642
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_candidate_report_ui.py::test_director_interview_prefills_director_from_current_school_director_assignment
-  duration_seconds_n2: 0.459
+  duration_seconds_n2: 0.579
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -8767,6 +8892,26 @@ entries:
   duration_source: measured
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_staffing_change_stage.py::test_acknowledged_director_interview_self_repairs_missing_destination
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_change_stage.py::test_acknowledged_director_interview_self_repair_defers_when_destination_is_locked
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_change_stage.py::test_acknowledged_director_interview_repairs_partial_destination_contact
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_change_stage.py::test_acknowledged_director_interview_records_proof_without_duplicate_replay
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_staffing_change_stage.py::test_completed_director_interview_replay_preserves_typed_contact_for_hire
   duration_seconds_n2: 0.4
   duration_source: measured
@@ -8778,6 +8923,11 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_staffing_dashboard_host.py::test_host_registers_admin_and_director_onboarding_navigation
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_dashboard_host.py::test_host_defers_onboarding_workspace_until_first_navigation
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
@@ -8798,18 +8948,18 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_staffing_dashboard_host.py::test_each_canonical_launcher_scope_uses_its_own_authorized_replica[Palmdale]
-  duration_seconds_n2: 0.43
+  duration_seconds_n2: 0.435
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_dashboard_host.py::test_each_canonical_launcher_scope_uses_its_own_authorized_replica[Hawthorne]
-  duration_seconds_n2: 0.409
+  duration_seconds_n2: 0.478
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_dashboard_host.py::test_each_canonical_launcher_scope_uses_its_own_authorized_replica[North
     Long Beach]
-  duration_seconds_n2: 0.429
+  duration_seconds_n2: 0.582
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -8819,7 +8969,7 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_staffing_dashboard_host.py::test_sync_conflict_prompt_identifies_versions_and_explicit_choices
-  duration_seconds_n2: 0.44
+  duration_seconds_n2: 0.391
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -8844,42 +8994,42 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_staffing_dashboard_host.py::test_admin_and_director_hosts_share_v2_widget_and_native_actions
-  duration_seconds_n2: 1.925
+  duration_seconds_n2: 2.382
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_dashboard_host.py::test_native_mark_not_needed_works_without_entrypoint_callback
-  duration_seconds_n2: 0.475
+  duration_seconds_n2: 0.606
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_dashboard_host.py::test_shared_report_opener_enforces_scope_and_opens_word_for_both_roles
-  duration_seconds_n2: 1.944
+  duration_seconds_n2: 1.988
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_dashboard_host.py::test_shared_legacy_report_open_failure_surfaces_warning
-  duration_seconds_n2: 0.351
+  duration_seconds_n2: 0.487
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_people_actions.py::test_edit_person_button_opens_populated_dialog_and_saves_changes
-  duration_seconds_n2: 0.732
+  duration_seconds_n2: 0.863
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_people_actions.py::test_deactivate_employee_button_confirms_and_soft_deactivates_unassigned_person
-  duration_seconds_n2: 0.753
+  duration_seconds_n2: 0.821
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_people_actions.py::test_assign_or_create_person_button_opens_mark_coming_workflow
-  duration_seconds_n2: 0.801
+  duration_seconds_n2: 0.781
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_people_actions.py::test_read_only_position_drawer_has_no_draft_or_save_buttons
-  duration_seconds_n2: 0.773
+  duration_seconds_n2: 0.767
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -8889,27 +9039,27 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_staffing_people_actions.py::test_permit_dialog_attach_file_button_persists_selected_document
-  duration_seconds_n2: 1.15
+  duration_seconds_n2: 1.074
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_people_actions.py::test_manage_filled_card_continue_button_opens_selected_workflow_directly
-  duration_seconds_n2: 0.811
+  duration_seconds_n2: 0.85
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_people_actions.py::test_mark_coming_select_existing_person_popup_fills_candidate_fields
-  duration_seconds_n2: 0.987
+  duration_seconds_n2: 1.096
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_people_actions.py::test_employee_detail_tabs_switch_visible_content
-  duration_seconds_n2: 0.6
+  duration_seconds_n2: 0.603
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_people_actions.py::test_employee_pagination_buttons_navigate_people_rows
-  duration_seconds_n2: 0.799
+  duration_seconds_n2: 0.848
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -9098,6 +9248,11 @@ entries:
   duration_source: measured
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_staffing_service_state_machine.py::test_director_interview_records_school_non_teacher_position_without_classroom
+  duration_seconds_n2: 0.29
+  duration_source: measured
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_staffing_service_state_machine.py::test_director_interview_validation_requires_notes_and_hire_shift_details
   duration_seconds_n2: 0.366
   duration_source: measured
@@ -9134,47 +9289,47 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_staffing_settings_v2.py::test_starting_pay_settings_require_new_version_and_save_valid_policy
-  duration_seconds_n2: 0.18
+  duration_seconds_n2: 0.126
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_settings_v2.py::test_settings_page_backfills_all_known_school_offer_templates
-  duration_seconds_n2: 0.143
+  duration_seconds_n2: 0.121
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_settings_v2.py::test_settings_page_uses_notification_sections_and_responsive_navigation
-  duration_seconds_n2: 0.158
+  duration_seconds_n2: 0.122
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_settings_v2.py::test_settings_question_edit_updates_draft_immediately_in_global_edit_mode
-  duration_seconds_n2: 0.147
+  duration_seconds_n2: 0.128
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_settings_v2.py::test_pyside_admin_settings_live_inside_staffing_v2_shell
-  duration_seconds_n2: 1.67
+  duration_seconds_n2: 1.046
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_settings_v2.py::test_settings_rubric_editor_updates_and_duplicates_selected_trait
-  duration_seconds_n2: 0.178
+  duration_seconds_n2: 0.132
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_settings_v2.py::test_settings_rubric_editor_updates_weight_descriptors_and_signal_context
-  duration_seconds_n2: 0.147
+  duration_seconds_n2: 0.134
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_settings_v2.py::test_settings_template_paths_update_draft_and_show_validation
-  duration_seconds_n2: 0.149
+  duration_seconds_n2: 0.13
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_settings_v2.py::test_settings_shared_email_account_tests_and_saves_independently
-  duration_seconds_n2: 0.164
+  duration_seconds_n2: 0.15
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -9184,37 +9339,37 @@ entries:
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_staffing_settings_v2.py::test_admin_settings_configures_onboarding_owner_role
-  duration_seconds_n2: 0.149
+  duration_seconds_n2: 0.128
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_settings_v2.py::test_email_only_changes_do_not_enable_global_configuration_actions
-  duration_seconds_n2: 0.148
+  duration_seconds_n2: 0.132
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_settings_v2.py::test_email_changes_participate_in_navigation_and_close_guards
-  duration_seconds_n2: 0.153
+  duration_seconds_n2: 0.117
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_settings_v2.py::test_settings_publish_and_discard_use_confirmed_admin_draft
-  duration_seconds_n2: 0.163
+  duration_seconds_n2: 0.135
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_settings_v2.py::test_settings_dirty_navigation_and_close_guards_preserve_or_discard
-  duration_seconds_n2: 0.163
+  duration_seconds_n2: 0.133
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_settings_v2.py::test_settings_interview_flow_adds_duplicates_reorders_and_deletes_question
-  duration_seconds_n2: 0.168
+  duration_seconds_n2: 0.135
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
 - nodeid: tests/test_staffing_settings_v2.py::test_pyside_window_close_delegates_to_loaded_settings_guard
-  duration_seconds_n2: 0.127
+  duration_seconds_n2: 0.074
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
@@ -9458,6 +9613,11 @@ entries:
   duration_source: collection_default
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_startup_lazy_imports.py::test_app_import_defers_onboarding_pdf_engines_until_document_action
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_storage_persistence.py::test_question_overrides_store_save_persists_same_shape
   duration_seconds_n2: 0.013
   duration_source: measured
@@ -9536,6 +9696,11 @@ entries:
 - nodeid: tests/test_storage_persistence.py::test_offer_path_resolution_selects_template_from_weekly_hours[30-full.docx]
   duration_seconds_n2: 0.001
   duration_source: measured
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_storage_persistence.py::test_offer_path_resolution_remaps_absolute_path_from_another_computer
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_storage_persistence.py::test_resolve_interview_notes_output_dir_uses_school_setting_under_current_dropbox_root

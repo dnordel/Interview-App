@@ -160,6 +160,7 @@ function Ensure-ConfigShape($cfg) {
       Python311Exe = $null
       VBCable = [pscustomobject]@{ Detected = $null; Evidence = @(); LastCheckedUtc = $null }
       RequirementsFingerprint = $null
+      GpuVendor = $null
     }) -Force
   }
 
@@ -174,6 +175,9 @@ function Ensure-ConfigShape($cfg) {
   }
   if ($cfg.Tools.PSObject.Properties.Name -notcontains "OpenVinoRequirementsFingerprint") {
     $cfg.Tools | Add-Member -NotePropertyName OpenVinoRequirementsFingerprint -NotePropertyValue $null -Force
+  }
+  if ($cfg.Tools.PSObject.Properties.Name -notcontains "GpuVendor") {
+    $cfg.Tools | Add-Member -NotePropertyName GpuVendor -NotePropertyValue $null -Force
   }
 
   if (-not $cfg.Tools.VBCable) {
@@ -839,6 +843,9 @@ function Test-NvidiaGPU {
 }
 
 function Get-GpuVendorProfile {
+  if ($null -ne $script:GpuVendorProfileCache) {
+    return $script:GpuVendorProfileCache
+  }
   $profile = [PSCustomObject]@{
     Nvidia = $false
     Amd = $false
@@ -871,6 +878,7 @@ function Get-GpuVendorProfile {
     Write-Log "Detected GPU profile: no GPU controllers reported."
   }
 
+  $script:GpuVendorProfileCache = $profile
   return $profile
 }
 
@@ -1399,6 +1407,161 @@ If VB-CABLE was just installed, reboot first if Windows does not show the device
   return $Cfg
 }
 
+function Get-FastLaunchContext {
+  param([Parameter(Mandatory=$true)]$Cfg)
+
+  try {
+    $venvDir = Join-Path (Join-Path (Get-ConfigBaseDir) "py311") ".venv"
+    $venvPy = Join-Path $venvDir "Scripts\python.exe"
+    $appPath = Join-Path (Join-Path $AppDir "src") $DefaultInterviewAppFile
+    $wrapperPath = Join-Path (Join-Path $AppDir "src") "runtime_wrapper.py"
+    if (-not (Test-Path $venvPy) -or -not (Test-Path $appPath) -or -not (Test-Path $wrapperPath)) {
+      return $null
+    }
+    if (-not (Test-VenvUsesSystemSitePackages -VenvDir $venvDir)) {
+      return $null
+    }
+
+    $requirementsPath = Join-Path $AppDir "requirements.txt"
+    $requirementsFingerprint = Get-RequirementsFingerprint -RequirementsPath $requirementsPath
+    if (-not $Cfg.Tools.RequirementsFingerprint -or $Cfg.Tools.RequirementsFingerprint -ne $requirementsFingerprint) {
+      return $null
+    }
+    $openVinoPath = Join-Path $AppDir "requirements-openvino.txt"
+    if (Test-Path $openVinoPath) {
+      $openVinoFingerprint = Get-RequirementsFingerprint -RequirementsPath $openVinoPath
+      if (-not $Cfg.Tools.OpenVinoRequirementsFingerprint -or $Cfg.Tools.OpenVinoRequirementsFingerprint -ne $openVinoFingerprint) {
+        return $null
+      }
+    }
+    $gpuVendor = [string]$Cfg.Tools.GpuVendor
+    if (-not $gpuVendor -and $Cfg.Tools.GpuRequirementsFingerprint) {
+      $cachedGpuPath = Join-Path $AppDir "requirements-gpu.txt"
+      if ((Test-Path $cachedGpuPath) -and $Cfg.Tools.GpuRequirementsFingerprint -eq (Get-RequirementsFingerprint -RequirementsPath $cachedGpuPath)) {
+        $gpuVendor = "nvidia"
+      }
+    }
+    if ($gpuVendor -notin @("nvidia", "amd", "intel", "cpu")) {
+      return $null
+    }
+    if ($gpuVendor -eq "nvidia") {
+      $gpuRequirementsPath = Join-Path $AppDir "requirements-gpu.txt"
+      $gpuFingerprint = Get-RequirementsFingerprint -RequirementsPath $gpuRequirementsPath
+      if (-not $Cfg.Tools.GpuRequirementsFingerprint -or $Cfg.Tools.GpuRequirementsFingerprint -ne $gpuFingerprint) {
+        return $null
+      }
+    }
+
+    $resolvedRoot = [System.IO.Path]::GetFullPath($AppDir).TrimEnd('\') + '\'
+    $resolvedApp = [System.IO.Path]::GetFullPath($appPath)
+    $resolvedWrapper = [System.IO.Path]::GetFullPath($wrapperPath)
+    if (-not $resolvedApp.StartsWith($resolvedRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+      return $null
+    }
+    if (-not $resolvedWrapper.StartsWith($resolvedRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+      return $null
+    }
+
+    $healthCode = "import importlib.util as u, sys; sys.exit(0 if u.find_spec('PySide6') and u.find_spec('docx') else 1)"
+    if ((Run-Proc -File $venvPy -Args @("-c", $healthCode)) -ne 0) {
+      return $null
+    }
+    return [pscustomobject]@{
+      VenvPy = $venvPy
+      AppPath = $resolvedApp
+      GpuVendor = $gpuVendor
+    }
+  }
+  catch {
+    Write-Log "Fast launch validation failed; running full setup. Error: $($_.Exception.Message)"
+    return $null
+  }
+}
+
+function Add-CudaRuntimePaths {
+  param(
+    [Parameter(Mandatory=$true)][string]$VenvPy,
+    [Parameter(Mandatory=$true)][string]$GpuVendor
+  )
+  if ($GpuVendor -ne "nvidia") {
+    return
+  }
+  $venvScripts = Split-Path $VenvPy -Parent
+  $venvRoot = Split-Path $venvScripts -Parent
+  $cudaBase = Join-Path $venvRoot "Lib\site-packages\nvidia"
+  foreach ($path in @(
+    (Join-Path $cudaBase "cublas\bin"),
+    (Join-Path $cudaBase "cudnn\bin"),
+    (Join-Path $cudaBase "cuda_runtime\bin")
+  )) {
+    if (Test-Path $path) {
+      $env:PATH = "$path;$env:PATH"
+      Write-Log "Added CUDA path: $path"
+    }
+  }
+}
+
+function Start-InterviewApplication {
+  param(
+    [Parameter(Mandatory=$true)][string]$VenvPy,
+    [Parameter(Mandatory=$true)][string]$AppPath
+  )
+  $appFull = (Resolve-Path $AppPath).Path
+  $wrapperPath = Join-Path (Join-Path $AppDir "src") "runtime_wrapper.py"
+  if (-not (Test-Path $wrapperPath)) {
+    throw "Missing runtime wrapper: $wrapperPath"
+  }
+  $wrapperArgs = @("--target", $appFull, "--app-root", $AppDir)
+  if ($DirectorStaffingMode) {
+    $wrapperArgs += "--director-staffing"
+    if ($DirectorSchool.Trim()) {
+      $wrapperArgs += @("--director-school", $DirectorSchool.Trim())
+    }
+  }
+  if ($DebugMode) {
+    $wrapperArgs += "--debug"
+  }
+  $previousDebugFlag = $env:INTERVIEW_APP_DEBUG
+  if ($DebugMode) {
+    $env:INTERVIEW_APP_DEBUG = "1"
+    Write-Log "Debug mode enabled for launched app."
+  }
+  try {
+    return Start-PythonGuiApp `
+      -PythonExe $VenvPy `
+      -ScriptPath $wrapperPath `
+      -ScriptArgs $wrapperArgs `
+      -WorkingDir (Split-Path -Parent $appFull) `
+      -ShowConsole:$DebugMode
+  }
+  finally {
+    $env:INTERVIEW_APP_DEBUG = $previousDebugFlag
+  }
+}
+
+$fastCfg = Ensure-ConfigShape (Load-Config)
+$fastContext = Get-FastLaunchContext -Cfg $fastCfg
+if ($null -ne $fastContext) {
+  try {
+    Write-Log "Validated fast launch path; deferring hardware and maintenance checks."
+    $vendor = $fastContext.GpuVendor
+    Set-GpuVendorEnvironment -Profile ([pscustomobject]@{
+      Nvidia = $vendor -eq "nvidia"
+      Amd = $vendor -eq "amd"
+      Intel = $vendor -eq "intel"
+      Names = @()
+    })
+    Add-CudaRuntimePaths -VenvPy $fastContext.VenvPy -GpuVendor $vendor
+    Install-StaffingDesktopShortcut
+    [void](Start-InterviewApplication -VenvPy $fastContext.VenvPy -AppPath $fastContext.AppPath)
+    Write-Log "Fast launch complete."
+  }
+  finally {
+    try { $mutex.ReleaseMutex() | Out-Null } catch {}
+  }
+  return
+}
+
 # ---------- Main installer UI ----------
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "Interview Tool Setup"
@@ -1471,33 +1634,13 @@ $form.Add_Shown({
     Set-Progress 45 "Checking Python venv and app packages..."
     $venvPy = Ensure-VenvAndDeps $py
     $cfg = Ensure-SelectedUiModeAvailable -Cfg $cfg -VenvPy $venvPy
-    Set-GpuVendorEnvironment -Profile (Get-GpuVendorProfile)
-
-
-    # -------------------------
-    # Expose CUDA runtime DLLs for faster-whisper
-    # -------------------------
-    
-    if (Test-NvidiaGPU) {
-      $venvScripts = Split-Path $venvPy -Parent
-      $venvRoot = Split-Path $venvScripts -Parent
-      $cudaBase = Join-Path $venvRoot "Lib\site-packages\nvidia"
-
-      $paths = @(
-          (Join-Path $cudaBase "cublas\bin"),
-          (Join-Path $cudaBase "cudnn\bin"),
-          (Join-Path $cudaBase "cuda_runtime\bin")
-      )
-
-      foreach ($p in $paths) {
-          if (Test-Path $p) {
-              $env:PATH = "$p;$env:PATH"
-              Write-Log "Added CUDA path: $p"
-          }
-      }
-    } else {
-      Write-Log "Skipping CUDA PATH setup because no NVIDIA GPU was detected."
-    }
+    $gpuProfile = Get-GpuVendorProfile
+    Set-GpuVendorEnvironment -Profile $gpuProfile
+    $gpuVendor = if ($gpuProfile.Nvidia) { "nvidia" } elseif ($gpuProfile.Amd) { "amd" } elseif ($gpuProfile.Intel) { "intel" } else { "cpu" }
+    $cfg = Ensure-ConfigShape (Load-Config)
+    $cfg.Tools.GpuVendor = $gpuVendor
+    Save-Config $cfg
+    Add-CudaRuntimePaths -VenvPy $venvPy -GpuVendor $gpuVendor
 
     # VB-CABLE handling based on detection + user answer
     Set-Progress 75 "Handling VB-CABLE..."
@@ -1522,44 +1665,7 @@ $form.Add_Shown({
 
     Install-StaffingDesktopShortcut
     Set-Progress 95 "Launching interview tool..."
-
-    # --- DEBUG LAUNCH (shows Python console) ---
-    $appFull = (Resolve-Path $app).Path
-    $wrapperPath = Join-Path (Join-Path $AppDir "src") "runtime_wrapper.py"
-    if (-not (Test-Path $wrapperPath)) {
-      throw "Missing runtime wrapper: $wrapperPath"
-    }
-
-    $workDir = Split-Path -Parent $appFull
-    $debugFlag = if ($DebugMode) { "--debug" } else { "" }
-    $wrapperArgs = @("--target", $appFull, "--app-root", $AppDir)
-    if ($DirectorStaffingMode) {
-      $wrapperArgs += "--director-staffing"
-      if ($DirectorSchool.Trim()) {
-        $wrapperArgs += @("--director-school", $DirectorSchool.Trim())
-      }
-    }
-    if ($debugFlag) {
-      $wrapperArgs += $debugFlag
-    }
-
-    $previousDebugFlag = $env:INTERVIEW_APP_DEBUG
-    if ($DebugMode) {
-      $env:INTERVIEW_APP_DEBUG = "1"
-      Write-Log "Debug mode enabled for launched app."
-    }
-
-    try {
-      $p = Start-PythonGuiApp `
-      -PythonExe $venvPy `
-      -ScriptPath $wrapperPath `
-      -ScriptArgs $wrapperArgs `
-      -WorkingDir $workDir `
-      -ShowConsole:$DebugMode
-    }
-    finally {
-      $env:INTERVIEW_APP_DEBUG = $previousDebugFlag
-    }
+    [void](Start-InterviewApplication -VenvPy $venvPy -AppPath $app)
 
     Set-Progress 100 "Launching complete. Closing installer..."
     $form.BeginInvoke([Action]{ $form.Close() }) | Out-Null

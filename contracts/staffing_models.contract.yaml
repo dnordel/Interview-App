@@ -2,9 +2,25 @@ module:
   name: staffing_models
   language: python
   path: src/staffing_models.py
-  version: 0.16.0
-  description: Dataclasses and enum constants for local staffing dashboard transactions, classroom records, employee/person permit metadata including managed document paths, current assignment display data, assignment history dashboard records, metrics, workbook-style display metadata, and director interview referral/completion tracking.
-functions: []
+  version: 0.17.0
+  description: Dataclasses, enum constants, and school-scoped director-interview position/classroom option derivation for local staffing dashboard transactions, classroom records, employee/person permit metadata including managed document paths, current assignment display data, assignment history dashboard records, metrics, workbook-style display metadata, and director interview referral/completion tracking.
+functions:
+- name: director_interview_position_options
+  locked: false
+  inputs:
+    rows: {type: 'Sequence[StaffingAssignment | StaffingMetricRow]', required: true}
+    school: {type: str, required: true}
+  returns: {type: 'tuple[tuple[str, str], ...]'}
+  exceptions: []
+  side_effects: Returns teacher offer positions followed by normalized, school-scoped non-teacher staffing positions without mutating input rows.
+- name: director_interview_classroom_options
+  locked: false
+  inputs:
+    rows: {type: 'Sequence[StaffingAssignment | StaffingMetricRow]', required: true}
+    school: {type: str, required: true}
+  returns: {type: 'tuple[str, ...]'}
+  exceptions: []
+  side_effects: Returns sorted school classroom names backed by teacher staffing rows, excluding support pseudo-classrooms.
 classes: []
 data_structures:
 - name: ASSIGNMENT_STATUSES
@@ -15,6 +31,10 @@ data_structures:
   type: tuple[str, ...]
 - name: DIRECTOR_INTERVIEW_DECISIONS
   type: tuple[str, ...]
+- name: TEACHER_OFFER_POSITION_IDS
+  type: tuple[str, ...]
+- name: TEACHER_OFFER_POSITION_LABELS
+  type: dict[str, str]
 - name: StaffingAssignment
   type: dataclass
   fields:

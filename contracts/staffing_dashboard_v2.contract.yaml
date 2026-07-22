@@ -2,8 +2,8 @@ module:
   name: staffing_dashboard_v2
   language: python
   path: src/staffing_dashboard_v2.py
-  version: 1.1.0
-  description: Parallel PySide Staffing v2 dashboard page module with compact uniform navigation, a user-toggleable icon rail, independently collapsible scrollable sections, and position, employee, classroom, validation, notification, director interview offer-position selection, and assignment-history workflows.
+  version: 1.1.2
+  description: Parallel PySide Staffing v2 dashboard page module with compact uniform navigation, a user-toggleable icon rail, independently collapsible scrollable sections, and position, employee, classroom, validation, notification, school-derived director interview position selection, and assignment-history workflows.
 functions:
 - name: apply_staffing_v2_light_theme
   description: Force a supplied or current QApplication onto Staffing v2's stable light Fusion Qt style and palette so native dark/high-contrast system color schemes cannot invert dashboard panels, tables, or inputs.
@@ -797,7 +797,7 @@ classes:
     returns:
       type: None
     exceptions: []
-    side_effects: Opens a scrollable two-column director interview completion dialog with a fixed validation banner above the footer and prefilled same-school active Director assignment name when available; Hire requires a blank-first exact Lead Teacher, Teacher, or Teacher Floater offer-position selection plus proposed shift/classroom; email is required, phone is optional, part-time shifts require benefits-warning confirmation, and saving refreshes dashboard tables without mutating assignments or classroom status.
+    side_effects: Opens a scrollable two-column director interview completion dialog with a fixed validation banner above the footer, distinct non-overlapping proposed-position and missing-contact rows, and prefilled same-school active Director assignment name when available; Hire requires a blank-first school-derived position plus proposed shift, proposed classroom is shown and required only for Lead Teacher, Teacher, or Teacher Floater, support pseudo-classrooms appear as non-teacher position choices, email is required, phone is optional, part-time shifts require benefits-warning confirmation, and saving refreshes dashboard tables without mutating assignments or classroom status.
   - name: _default_director_name
     inputs:
       school: {type: str, required: true}

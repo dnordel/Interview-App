@@ -7,6 +7,7 @@ import os
 import queue
 import re
 import shutil
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -23,7 +24,7 @@ from types import SimpleNamespace
 from typing import Any, Sequence
 
 from admin_studio import AdminStudio, AdminStudioPaths
-from app_branding import apply_staffing_app_icon
+from app_branding import apply_staffing_app_icon, set_windows_app_user_model_id
 from candidate_report import CandidateReportRepository, build_candidate_report_snapshot
 from data_store import (
     InterviewHistoryStore,
@@ -152,6 +153,9 @@ PYSIDE_CORE_FINALIZE_PROGRESS_TASKS = (
     "Saving interview artifacts",
 )
 PYSIDE_INTRO_AUDIO_CHECK_DELAY_MS = 15000
+PYSIDE_NOTIFICATION_STARTUP_DELAY_MS = 1500
+PYSIDE_RECORDING_PRELOAD_DELAY_MS = 3000
+PYSIDE_ONBOARDING_WARMUP_DELAY_MS = 4500
 LIVE_TRANSCRIPT_INTERVAL_MS = 10000
 LIVE_AUDIO_INTERVAL_MS = 500
 
@@ -2090,6 +2094,7 @@ class PySideInterviewWindow:
         self._overwrite_next_live_boundary_timestamp = False
         self._startup_notifications_scheduled = False
         self._recording_interface_preload_started = False
+        self._onboarding_warmup_scheduled = False
         self._live_transcription_lock = threading.Lock()
         self._live_transcript_queue: queue.Queue[dict[str, Any]] | None = None
         self._live_transcript_timer: Any | None = None
@@ -2138,6 +2143,56 @@ class PySideInterviewWindow:
         self._apply_responsive_layout()
 
     def _register_hiring_v2_pages(self, dashboard: Any) -> None:
+        dashboard.register_external_section("hiring", "HIRING")
+        interviews_nav = dashboard.register_external_page(
+            "hiring",
+            "interviews",
+            "Interviews",
+            icon_key="people",
+            provider=lambda: self._hiring_v2_page_widget(dashboard, "interviews"),
+        )
+        dashboard.register_external_page(
+            "hiring",
+            "candidates",
+            "Candidates",
+            icon_key="people",
+            provider=lambda: self._hiring_v2_page_widget(dashboard, "candidates"),
+        )
+        dashboard.register_external_page(
+            "hiring",
+            "offers",
+            "Offers",
+            icon_key="history",
+            provider=lambda: self._hiring_v2_page_widget(dashboard, "offers"),
+        )
+        interviews_nav.clicked.connect(
+            lambda _checked=False: self._open_hiring_interview_from_navigation(dashboard)
+        )
+
+    def _hiring_v2_page_widget(self, dashboard: Any, page_id: str) -> Any:
+        widgets = getattr(self, "_hiring_v2_widgets", None)
+        if widgets is None:
+            self._build_hiring_v2_pages(dashboard)
+            widgets = self._hiring_v2_widgets
+        return widgets[page_id]
+
+    def _ensure_hiring_workspace_for_action(self) -> None:
+        if hasattr(self, "interview_tabs"):
+            return
+        dashboard = getattr(self, "staffing_v2_dashboard", None)
+        if dashboard is not None:
+            dashboard.show_external_page("interviews")
+
+    def _open_hiring_interview_from_navigation(self, dashboard: Any) -> None:
+        self._hiring_v2_page_widget(dashboard, "interviews")
+        dashboard.set_navigation_locked(False)
+        dashboard.set_navigation_mode("full")
+        self.hiring_v2_router.show_interview()
+        self.interview_tabs.setCurrentIndex(_INTERVIEW_HOME_TAB_INDEX)
+        if self.session is None:
+            self._reset_new_interview_setup()
+
+    def _build_hiring_v2_pages(self, dashboard: Any) -> None:
         notification_adapter = HiringOfferNotificationAdapter(self._notification_service())
         service = HiringWorkflowService(
             HiringPipelineStore(self.model.history_path),
@@ -2225,6 +2280,7 @@ class PySideInterviewWindow:
                 "open_notes": open_notes,
                 "regenerate_notes": regenerate_notes,
                 "import_transcript": import_transcript,
+                "candidate_offer_prefill": self._director_interview_offer_prefill,
             },
         )
         candidates_workspace = self._hiring_candidates_workspace()
@@ -2234,17 +2290,11 @@ class PySideInterviewWindow:
             interview_widget=guide_widget,
             initial_route="interview",
         )
-        dashboard.register_external_section("hiring", "HIRING")
-        interviews_nav = dashboard.register_external_page(
-            "hiring", "interviews", "Interviews", self.hiring_v2_router.widget, icon_key="people"
-        )
-        interviews_nav.clicked.connect(lambda _checked=False: new_interview())
-        dashboard.register_external_page(
-            "hiring", "candidates", "Candidates", candidates_workspace, icon_key="people"
-        )
-        dashboard.register_external_page(
-            "hiring", "offers", "Offers", self.hiring_v2_page.offers_widget, icon_key="history"
-        )
+        self._hiring_v2_widgets = {
+            "interviews": self.hiring_v2_router.widget,
+            "candidates": candidates_workspace,
+            "offers": self.hiring_v2_page.offers_widget,
+        }
 
     def _hiring_candidates_workspace(self) -> Any:
         workspace = self.QtWidgets.QWidget()
@@ -2297,8 +2347,56 @@ class PySideInterviewWindow:
         version: Any,
     ) -> tuple[Path, Path]:
         terms = version.terms
-        template_path = Path(str(terms.get("template_path") or "")).expanduser().resolve()
-        output_dir = Path(str(terms.get("output_dir") or "")).expanduser().resolve()
+        template_text = str(terms.get("template_path") or "").strip()
+        output_text = str(terms.get("output_dir") or "").strip()
+        template_path = Path(template_text).expanduser().resolve()
+        output_dir = Path(output_text).expanduser().resolve()
+        weekly_hours = int(
+            float(terms.get("weekly_hours") or terms.get("hours_week") or 0)
+        )
+        template_kind = "full_time" if weekly_hours >= 30 else "part_time"
+        settings: dict[str, dict[str, str]] | None = None
+        saved_template_available = template_path.is_file()
+        if not saved_template_available or not output_text:
+            settings = SchoolOfferSettingsStore(SCHOOL_OFFER_SETTINGS_PATH).load()
+        if not saved_template_available:
+            template_path = resolve_offer_template_path(
+                DEFAULT_BASE_DIR,
+                application.school,
+                weekly_hours,
+                settings,
+            ).expanduser().resolve()
+        if not saved_template_available or not output_text:
+            output_dir = resolve_offer_output_dir(
+                DEFAULT_BASE_DIR,
+                application.school,
+                settings,
+            ).expanduser().resolve()
+        history_path = getattr(getattr(self, "model", None), "history_path", None)
+        template_store = HiringPipelineStore(Path(history_path)) if history_path else None
+        if template_path.is_file() and template_store is not None:
+            try:
+                template_store.snapshot_offer_template(
+                    school=application.school,
+                    template_kind=template_kind,
+                    source_path=template_path,
+                    version_id=str(getattr(version, "version_id", "") or ""),
+                )
+            except (OSError, ValueError):
+                pass
+        elif template_store is not None:
+            try:
+                template_path = template_store.materialize_offer_template(
+                    school=application.school,
+                    template_kind=template_kind,
+                    destination_dir=Path(history_path).parent / "offer-template-cache",
+                    version_id=str(getattr(version, "version_id", "") or ""),
+                )
+            except (OSError, ValueError) as exc:
+                raise ValueError(
+                    "Validated offer template is required before submission. "
+                    "Dropbox template is unavailable and no valid SQL template copy could be loaded."
+                ) from exc
         if not template_path.is_file():
             raise ValueError("Validated offer template is required before submission.")
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -2312,7 +2410,7 @@ class PySideInterviewWindow:
             first_name=first_name,
             last_name=last_name,
             city=application.school,
-            position=application.position,
+            position=str(terms.get("position") or application.position),
             approval_date=generated_on,
             terms=terms,
         )
@@ -2389,6 +2487,12 @@ class PySideInterviewWindow:
             self.QtWidgets.QMessageBox.warning(self.window, "Executive approval", str(exc))
             return
         interview_score = "—"
+        preserved_score = terms.get("initial_interview_score")
+        try:
+            if preserved_score not in (None, ""):
+                interview_score = f"{float(preserved_score):g}%"
+        except (TypeError, ValueError):
+            pass
         for event in reversed(service.store.list_events(application.application_id)):
             if event.event_type != "initial_interview_completed":
                 continue
@@ -2423,6 +2527,7 @@ class PySideInterviewWindow:
             rendered_email=rendered_email,
             pdf_path=pdf_path,
             hourly_pay=str(terms.get("hourly_pay") or ""),
+            degree_in_ece=bool(qualification.get("degree_in_ece")),
             approve_label=(
                 "Approve and send"
                 if re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", candidate.email)
@@ -2437,8 +2542,41 @@ class PySideInterviewWindow:
         approver_name = approval_dialog.approver_name()
         changed_pay = approval_dialog.hourly_pay()
         change_pay_requested = approval_dialog.change_pay_requested()
+        qualification_change_requested = bool(
+            getattr(approval_dialog, "qualification_change_requested", lambda: False)()
+        )
+        corrected_degree_in_ece = bool(
+            getattr(
+                approval_dialog,
+                "degree_in_ece",
+                lambda: qualification.get("degree_in_ece", False),
+            )()
+        )
         approval_dialog.close()
         try:
+            if qualification_change_requested:
+                corrected_qualification = dict(qualification)
+                corrected_qualification["degree_in_ece"] = corrected_degree_in_ece
+                version = service.revise_pending_offer_qualification(
+                    application.application_id,
+                    version.version_id,
+                    qualification=corrected_qualification,
+                    actor=approver_name,
+                )
+                terms = version.terms
+                docx_path = Path(version.docx_path).expanduser().resolve()
+                pdf_path = Path(version.pdf_path).expanduser().resolve()
+                payload = HiringOfferNotificationAdapter.payload(candidate, version, pdf_path)
+                payload.update(
+                    {
+                        "offer_date": approval_dates.offer_date.isoformat(),
+                        "reply_by_date": approval_dates.reply_by_date.isoformat(),
+                        "start_date": approval_dates.start_date.isoformat(),
+                    }
+                )
+                rendered_email = self._notification_service().render_candidate_event_preview(
+                    "offer.approved", payload
+                )
             if change_pay_requested:
                 version = service.revise_pending_offer_pay(
                     application.application_id,
@@ -2646,6 +2784,35 @@ class PySideInterviewWindow:
                         )
                 break
 
+    def _director_interview_offer_prefill(self, application: Any) -> dict[str, str]:
+        history_id = str(getattr(application, "history_id", "") or "").strip()
+        school = str(getattr(application, "school", "") or "").strip()
+        if not history_id or history_id.startswith("external_offer:") or not school:
+            return {}
+        shared_path = Path(STAFFING_DB_PATH)
+        school_path = staffing_db_path_for_school(school, base_path=shared_path)
+        for path in dict.fromkeys((school_path, shared_path)):
+            if not path.is_file():
+                continue
+            try:
+                staffing = StaffingService(StaffingStore(path))
+                interview = staffing.find_completed_director_interview(
+                    history_id=history_id,
+                    school=school,
+                )
+            except (OSError, sqlite3.Error, ValueError):
+                continue
+            if interview is None:
+                continue
+            return {
+                "director_rating": _format_offer_number(interview.rating),
+                "proposed_classroom": interview.proposed_classroom,
+                "start_time": interview.proposed_shift_start,
+                "end_time": interview.proposed_shift_end,
+                "position_id": interview.offer_position_id,
+            }
+        return {}
+
     def _accept_hiring_offer_into_onboarding(
         self,
         application: Any,
@@ -2656,6 +2823,10 @@ class PySideInterviewWindow:
     ) -> Any:
         host = getattr(self, "staffing_v2_host", None)
         workspace = getattr(host, "onboarding_workspace", None)
+        if workspace is None:
+            ensure = getattr(host, "ensure_onboarding_workspace", None)
+            if callable(ensure):
+                workspace = ensure()
         if workspace is None:
             raise ValueError("Onboarding workspace is unavailable for accepted-offer handoff.")
         start_date = str(version.start_date or version.terms.get("start_date") or "").strip()
@@ -2763,6 +2934,7 @@ class PySideInterviewWindow:
         self._fit_window_to_available_screen(fill_available=True)
         self.window.showMaximized()
         self._start_source_update_monitoring()
+        self._schedule_onboarding_warmup()
         if getattr(self, "director_staffing_mode", False):
             return
         self._schedule_startup_notifications()
@@ -2812,7 +2984,10 @@ class PySideInterviewWindow:
         if self._startup_notifications_scheduled:
             return
         self._startup_notifications_scheduled = True
-        self.QtCore.QTimer.singleShot(0, self._run_due_notifications_safely)
+        self.QtCore.QTimer.singleShot(
+            PYSIDE_NOTIFICATION_STARTUP_DELAY_MS,
+            self._run_due_notifications_safely,
+        )
         timer = self.QtCore.QTimer(self.window)
         timer.setInterval(5 * 60 * 1000)
         timer.timeout.connect(self._run_due_notifications_safely)
@@ -2823,7 +2998,29 @@ class PySideInterviewWindow:
         if getattr(self, "_recording_interface_preload_started", False):
             return
         self._recording_interface_preload_started = True
-        self.QtCore.QTimer.singleShot(0, self._preload_recording_interface_async)
+        self.QtCore.QTimer.singleShot(
+            PYSIDE_RECORDING_PRELOAD_DELAY_MS,
+            self._preload_recording_interface_async,
+        )
+
+    def _schedule_onboarding_warmup(self) -> None:
+        if getattr(self, "_onboarding_warmup_scheduled", False):
+            return
+        self._onboarding_warmup_scheduled = True
+        self.QtCore.QTimer.singleShot(
+            PYSIDE_ONBOARDING_WARMUP_DELAY_MS,
+            self._warm_onboarding_core,
+        )
+
+    def _warm_onboarding_core(self) -> None:
+        host = getattr(self, "staffing_v2_host", None)
+        warm = getattr(host, "warm_onboarding", None)
+        if callable(warm):
+            warm()
+            return
+        ensure = getattr(host, "ensure_onboarding_workspace", None)
+        if callable(ensure):
+            ensure()
 
     def _recording_runtime_settings(self) -> dict[str, str]:
         return {
@@ -4401,6 +4598,7 @@ class PySideInterviewWindow:
     def _import_indeed_transcript_for_history_row(self, row: PySideHistoryRow) -> None:
         if not row.row_key:
             return
+        self._ensure_hiring_workspace_for_action()
         file_name, _filter = self.QtWidgets.QFileDialog.getOpenFileName(
             self.window,
             f"Import Indeed Transcript - {row.candidate or 'Candidate'}",
@@ -4853,6 +5051,7 @@ class PySideInterviewWindow:
         dashboard.set_navigation_locked(active)
 
     def _render_live_question_page(self) -> None:
+        self._ensure_hiring_workspace_for_action()
         layout = getattr(self, "live_question_layout", None)
         if layout is None:
             return
@@ -5330,6 +5529,7 @@ class PySideInterviewWindow:
         return qualification
 
     def _render_review_page(self) -> None:
+        self._ensure_hiring_workspace_for_action()
         layout = getattr(self, "review_layout", None)
         if layout is None:
             return
@@ -6319,7 +6519,12 @@ class PySideInterviewWindow:
         return dashboard.widget
 
     def _build_staffing_settings_v2_page(self) -> Any:
-        onboarding_workspace = getattr(getattr(self, "staffing_v2_host", None), "onboarding_workspace", None)
+        host = getattr(self, "staffing_v2_host", None)
+        onboarding_workspace = getattr(host, "onboarding_workspace", None)
+        if onboarding_workspace is None:
+            ensure = getattr(host, "ensure_onboarding_workspace", None)
+            if callable(ensure):
+                onboarding_workspace = ensure()
         self.staffing_settings_v2_page = StaffingSettingsV2Page(
             QtCore=self.QtCore,
             QtGui=self.QtGui,
@@ -6742,15 +6947,17 @@ def launch_pyside_interview_app(
     director_staffing: bool = False,
     director_school: str = "",
 ) -> int:
+    set_windows_app_user_model_id()
     _QtCore, _QtGui, _QtPdf, _QtPdfWidgets, QtWidgets = _import_qt()
     app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
+    apply_staffing_app_icon(_QtGui, app)
     apply_staffing_v2_light_theme(QtWidgets, _QtGui, app)
     _apply_styles(app)
     active_model = model or build_interview_redesign_model()
     if director_staffing:
         active_model = build_director_staffing_model(active_model, school=director_school)
     window = PySideInterviewWindow(active_model, defer_secondary_pages=True)
-    apply_staffing_app_icon(_QtGui, app, window.window)
+    window.window.setWindowIcon(app.windowIcon())
     window.show()
     return app.exec()
 

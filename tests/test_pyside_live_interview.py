@@ -149,9 +149,9 @@ def test_pyside_live_typography_stress_visual_scenario(
     window = pyside_interview_app.PySideInterviewWindow(model, defer_secondary_pages=True)
     window.session = session
     window.session_track_key = session.track_key
-    window.interview_tabs.setCurrentIndex(_INTERVIEW_LIVE_TAB_INDEX)
     window.staffing_v2_dashboard.show_external_page("interviews")
     window.hiring_v2_router.show_interview()
+    window.interview_tabs.setCurrentIndex(_INTERVIEW_LIVE_TAB_INDEX)
     window.window.resize(1672, 941)
     window.window.show()
     for screen_name, flow_index in (("intro", 0), ("non-scored", 2), ("scored", 3)):
@@ -536,9 +536,9 @@ def test_pyside_live_screens_responsive_render_scenario(
     session.start(candidate_name="Sofia Ramirez", school="Hawthorne", track_key="infant_toddler")
     window.session = session
     window.session_track_key = session.track_key
-    window.interview_tabs.setCurrentIndex(_INTERVIEW_LIVE_TAB_INDEX)
     window.staffing_v2_dashboard.show_external_page("interviews")
     window.hiring_v2_router.show_interview()
+    window.interview_tabs.setCurrentIndex(_INTERVIEW_LIVE_TAB_INDEX)
     window.window.show()
     app.processEvents()
     original_font = app.font()

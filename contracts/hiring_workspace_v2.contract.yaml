@@ -2,19 +2,21 @@ module:
   name: hiring_workspace_v2
   language: python
   path: src/hiring_workspace_v2.py
-  version: 3.8.0
-  description: Native Staffing v2 Candidates pipeline/history and Offers surfaces with shared candidate capture, searchable existing-candidate reuse, qualification-driven teacher offer creation, automatic school paths and shift-derived schedule terms, compact three-column approval facts, and versioned approval lifecycle actions.
+  version: 3.9.1
+  description: Native Staffing v2 Candidates pipeline/history and Offers surfaces with shared candidate capture, searchable existing-candidate reuse that preserves review facts, qualification-driven teacher offer creation, automatic school paths and shift-derived schedule terms, compact three-column approval facts, and versioned approval lifecycle actions.
 functions: []
 classes:
 - name: HiringOfferApprovalDialog
-  description: Embedded exact-PDF approval review with a compact optional three-column details grid, multi-page fit-width display, and fail-closed approver/readiness gating.
+  description: Embedded exact-PDF approval review with a compact optional three-column details grid, multi-page fit-width display, fail-closed approver/readiness gating, and an explicit degree-in-ECE correction action.
   locked: false
   attributes:
     dialog: {type: QDialog}
     pdf_document: {type: QPdfDocument}
     pdf_view: {type: QPdfView}
     pay_input: {type: QLineEdit}
+    degree_in_ece_input: {type: QCheckBox}
     approver_input: {type: QLineEdit}
+    correct_qualification_button: {type: QPushButton}
     change_pay_button: {type: QPushButton}
     approve_button: {type: QPushButton}
   methods:
@@ -29,6 +31,16 @@ classes:
     exceptions: []
     side_effects: none
   - name: change_pay_requested
+    inputs: {}
+    returns: {type: bool}
+    exceptions: []
+    side_effects: none
+  - name: degree_in_ece
+    inputs: {}
+    returns: {type: bool}
+    exceptions: []
+    side_effects: none
+  - name: qualification_change_requested
     inputs: {}
     returns: {type: bool}
     exceptions: []
@@ -105,13 +117,13 @@ classes:
     inputs: {}
     returns: {type: 'dict[str, Any] | None'}
     exceptions: []
-    side_effects: Opens a searchable new/existing candidate wizard using shared identity and qualification editors; validates required email, derives schedule, resolves school template/output settings, and returns no manual start-date field.
+    side_effects: Opens a searchable new/existing candidate wizard using shared identity and qualification editors; preserves available interview score, director rating, requested pay, classroom, editable director shift times, and director-selected offer position for the selected candidate; validates required email, derives schedule, resolves school template/output settings, and returns no manual start-date field.
   - name: _external_offer_candidate_prefill
     inputs:
       candidate_id: {type: str, required: true}
     returns: {type: 'dict[str, Any]'}
     exceptions: []
-    side_effects: Reads candidate applications, visible candidate reports, and prior offer versions to resolve latest school, position, and authoritative qualification defaults.
+    side_effects: Reads candidate applications, visible candidate reports, events, prior offer versions, and an optional exact director-interview provider to resolve latest school, director-selected offer position, authoritative qualification, interview score, director rating, requested pay, classroom, and shift-time defaults.
 data_structures: []
 dependencies:
 - dashboard_v2_ui

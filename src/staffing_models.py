@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
+from typing import Sequence
 
 
 ASSIGNMENT_STATUSES = ("dont_need_now", "need_now", "coming", "filled", "replace")
@@ -14,6 +16,11 @@ PERMIT_STATUSES = (
 DIRECTOR_REFERRAL_OUTCOMES = ("hire", "borderline")
 DIRECTOR_INTERVIEW_DECISIONS = ("hire", "no_hire")
 TEACHER_OFFER_POSITION_IDS = ("lead_teacher", "teacher", "teacher_floater")
+TEACHER_OFFER_POSITION_LABELS = {
+    "lead_teacher": "Lead Teacher",
+    "teacher": "Teacher",
+    "teacher_floater": "Teacher/Floater",
+}
 
 
 @dataclass(frozen=True)
@@ -197,3 +204,52 @@ class StaffingDirectorReferralRemovalAudit:
     removed_by: str
     removal_source: str
     removed_at: str = ""
+
+
+def director_interview_position_options(
+    rows: Sequence[StaffingAssignment | StaffingMetricRow],
+    school: str,
+) -> tuple[tuple[str, str], ...]:
+    school_key = str(school or "").strip().casefold()
+    labels: set[str] = set()
+    for row in rows:
+        if row.school.strip().casefold() != school_key:
+            continue
+        slot_group = row.slot_group.strip().casefold()
+        position_type = row.position_type.strip()
+        if slot_group == "support" or position_type.casefold() == "support":
+            label = row.position_name.strip() or row.classroom.strip()
+        elif position_type.casefold() not in {"teacher", "lead teacher", "lead"}:
+            label = position_type
+        else:
+            label = ""
+        if label:
+            labels.add(label)
+    options = list(TEACHER_OFFER_POSITION_LABELS.items())
+    for label in sorted(labels, key=str.casefold):
+        position_id = re.sub(r"[^a-z0-9]+", "_", label.casefold()).strip("_")
+        if position_id and position_id not in TEACHER_OFFER_POSITION_IDS:
+            options.append((position_id, label))
+    return tuple(options)
+
+
+def director_interview_classroom_options(
+    rows: Sequence[StaffingAssignment | StaffingMetricRow],
+    school: str,
+) -> tuple[str, ...]:
+    school_key = str(school or "").strip().casefold()
+    teacher_types = {"teacher", "lead teacher", "lead"}
+    return tuple(
+        sorted(
+            {
+                row.classroom
+                for row in rows
+                if row.school.strip().casefold() == school_key
+                and row.classroom
+                and (
+                    row.slot_group.strip().casefold() == "teacher"
+                    or row.position_type.strip().casefold() in teacher_types
+                )
+            }
+        )
+    )

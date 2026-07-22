@@ -214,6 +214,12 @@ class StaffingStore:
                     removal_source TEXT NOT NULL DEFAULT '',
                     removed_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS staffing_change_delivery_proofs (
+                    event_id TEXT PRIMARY KEY,
+                    operation TEXT NOT NULL,
+                    verification_status TEXT NOT NULL,
+                    verified_at TEXT NOT NULL
+                );
                 CREATE INDEX IF NOT EXISTS idx_director_referrals_school ON director_candidate_referrals(school);
                 CREATE INDEX IF NOT EXISTS idx_director_interviews_referral_id ON director_interviews(referral_id);
                 CREATE INDEX IF NOT EXISTS idx_director_referral_removal_audit_history_id
@@ -1052,6 +1058,69 @@ class StaffingStore:
                 previous=previous,
             )
             return interview
+
+    def list_change_delivery_proof_ids(self, *, operation: str) -> set[str]:
+        clean_operation = _required_text(operation, "Operation")
+        self.initialize()
+        with self.connect() as conn:
+            rows = conn.execute(
+                "SELECT event_id FROM staffing_change_delivery_proofs WHERE operation = ?",
+                (clean_operation,),
+            ).fetchall()
+        return {str(row["event_id"]) for row in rows}
+
+    def verify_and_record_director_interview_delivery(
+        self,
+        *,
+        event_id: str,
+        payload: dict[str, Any],
+        verified_at: str,
+    ) -> bool:
+        clean_event_id = _required_text(event_id, "Event ID")
+        history_id = _required_text(payload.get("history_id"), "History ID")
+        school = _required_text(payload.get("school"), "School")
+        with self.write_connection("staffing_change_delivery_proof") as conn:
+            row = conn.execute(
+                """
+                SELECT i.*, r.history_id, r.school,
+                       r.candidate_email AS referral_candidate_email,
+                       r.candidate_phone AS referral_candidate_phone
+                FROM director_interviews i
+                JOIN director_candidate_referrals r ON r.id = i.referral_id
+                WHERE r.history_id = ? AND r.school = ?
+                """,
+                (history_id, school),
+            ).fetchone()
+            if row is None:
+                return False
+            expected = {
+                "director_name": str(payload.get("director_name", "")).strip(),
+                "completed_date": str(payload.get("completed_date", "")).strip(),
+                "rating": float(payload.get("rating", 0)),
+                "decision": str(payload.get("decision", "")).strip(),
+                "decision_notes": str(payload.get("decision_notes", "")).strip(),
+                "proposed_shift_start": str(payload.get("proposed_shift_start", "")).strip(),
+                "proposed_shift_end": str(payload.get("proposed_shift_end", "")).strip(),
+                "proposed_classroom": str(payload.get("proposed_classroom", "")).strip(),
+                "offer_position_id": str(payload.get("offer_position_id", "")).strip(),
+                "follow_up_needed": 1 if payload.get("follow_up_needed") else 0,
+                "referral_candidate_email": str(payload.get("candidate_email", "")).strip(),
+                "referral_candidate_phone": str(payload.get("candidate_phone", "")).strip(),
+            }
+            exact = all(row[key] == value for key, value in expected.items())
+            newer = str(row["completed_date"]) > expected["completed_date"]
+            if not exact and not newer:
+                return False
+            conn.execute(
+                """
+                INSERT INTO staffing_change_delivery_proofs (
+                    event_id, operation, verification_status, verified_at
+                ) VALUES (?, 'record_director_interview', ?, ?)
+                ON CONFLICT(event_id) DO NOTHING
+                """,
+                (clean_event_id, "matched" if exact else "superseded", _required_text(verified_at, "Verified at")),
+            )
+            return True
 
     def reopen_director_interview(
         self,

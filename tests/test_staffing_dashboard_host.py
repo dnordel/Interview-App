@@ -148,6 +148,23 @@ def test_host_registers_admin_and_director_onboarding_navigation(tmp_path: Path)
     assert set(non_pilot.page.external_pages) == set()
 
 
+def test_host_defers_onboarding_workspace_until_first_navigation(tmp_path: Path) -> None:
+    host = _host(tmp_path, role="admin", store=_store(tmp_path, "lazy-onboarding.sqlite3"))
+
+    assert host.onboarding_store is None
+    assert host.onboarding_workspace is None
+    assert host.page.external_pages["onboarding_tasks"] is None
+
+    host.page.show_external_page("onboarding_tasks")
+    first_workspace = host.onboarding_workspace
+    assert first_workspace is not None
+    assert host.onboarding_store is not None
+    assert host.page.external_pages["onboarding_tasks"] is not None
+
+    host.page.show_external_page("onboarding_overview")
+    assert host.onboarding_workspace is first_workspace
+
+
 def test_host_enables_hawthorne_only_after_recorded_rollout_approval(tmp_path: Path) -> None:
     evidence = tmp_path / "onboarding" / "pilot" / "evidence.jsonl"
     monday = date(2026, 7, 20)
@@ -167,20 +184,21 @@ def test_host_enables_hawthorne_only_after_recorded_rollout_approval(tmp_path: P
         director_school="Hawthorne", onboarding_rollout_path=evidence,
     )
 
-    assert host.onboarding_workspace is not None
+    assert host.ensure_onboarding_workspace() is not None
 
 
 def test_admin_host_wires_shared_notification_directory_sender_and_scheduler(tmp_path: Path) -> None:
     admin = _host(tmp_path, role="admin", store=_store(tmp_path, "admin-communications.sqlite3"))
+    workspace = admin.ensure_onboarding_workspace()
 
-    assert admin.onboarding_workspace is not None
-    assert admin.onboarding_workspace.admin_fallback_email == "recruiting@launchpadpreschool.com"
-    assert admin.onboarding_workspace.reminder_recipient_resolver("Palmdale", "Payroll") == (
+    assert workspace is not None
+    assert workspace.admin_fallback_email == "recruiting@launchpadpreschool.com"
+    assert workspace.reminder_recipient_resolver("Palmdale", "Payroll") == (
         "payroll@launchpadpreschool.com"
     )
     assert admin.onboarding_scheduler is not None
-    assert admin.onboarding_workspace.service.artifact_vault is not None
-    assert admin.onboarding_workspace.service.artifact_vault.root == (tmp_path / "onboarding" / "vault").resolve()
+    assert workspace.service.artifact_vault is not None
+    assert workspace.service.artifact_vault.root == (tmp_path / "onboarding" / "vault").resolve()
 
 
 def test_host_uses_portable_onboarding_layout_and_migrates_legacy_replica(tmp_path: Path) -> None:
@@ -196,6 +214,7 @@ def test_host_uses_portable_onboarding_layout_and_migrates_legacy_replica(tmp_pa
     )
 
     expected = tmp_path / "onboarding" / "directors" / "palmdale.sqlite3"
+    director.ensure_onboarding_workspace()
     assert director.onboarding_store is not None
     assert director.onboarding_store.path == expected
     assert expected.exists()
@@ -211,7 +230,9 @@ def test_each_canonical_launcher_scope_uses_its_own_authorized_replica(tmp_path:
         director_school=school,
         onboarding_pilot_schools=("Palmdale", "Hawthorne", "North Long Beach"),
     )
-    service = host.onboarding_workspace.service
+    workspace = host.ensure_onboarding_workspace()
+    assert workspace is not None
+    service = workspace.service
 
     assert service.access.school_scope == school
     assert host.onboarding_store.path == host.onboarding_paths.director_replica(school)
@@ -234,7 +255,11 @@ def test_host_replays_shared_onboarding_changes_between_admin_and_director(tmp_p
         store=_store(tmp_path, "sync-director-staffing.sqlite3"),
         director_school="Palmdale",
     )
-    employee = admin.onboarding_workspace.service.create_employee(
+    admin_workspace = admin.ensure_onboarding_workspace()
+    director_workspace = director.ensure_onboarding_workspace()
+    assert admin_workspace is not None
+    assert director_workspace is not None
+    employee = admin_workspace.service.create_employee(
         legal_name="Jordan Lee",
         school="Palmdale",
         role="Teacher",
@@ -243,7 +268,7 @@ def test_host_replays_shared_onboarding_changes_between_admin_and_director(tmp_p
     )
 
     assert director.sync_onboarding() == 1
-    assert director.onboarding_workspace.service.get_employee(employee.id).school == "Palmdale"
+    assert director_workspace.service.get_employee(employee.id).school == "Palmdale"
 
 
 def test_sync_conflict_prompt_identifies_versions_and_explicit_choices(tmp_path: Path, monkeypatch) -> None:
@@ -281,7 +306,9 @@ def test_sync_conflict_prompt_identifies_versions_and_explicit_choices(tmp_path:
 def test_sync_conflict_defers_when_onboarding_edit_session_stays_open(tmp_path: Path, monkeypatch) -> None:
     _qt_core, _qt_gui, qt_widgets, _app = _qt()
     host = _host(tmp_path, role="admin", store=_store(tmp_path, "defer-conflict.sqlite3"))
-    host.onboarding_workspace.request_navigation_away = lambda: False
+    workspace = host.ensure_onboarding_workspace()
+    assert workspace is not None
+    workspace.request_navigation_away = lambda: False
     monkeypatch.setattr(
         qt_widgets.QMessageBox, "question",
         lambda *_args, **_kwargs: pytest.fail("conflict choice must wait for edit resolution"),
@@ -300,11 +327,13 @@ def test_sync_conflict_defers_when_onboarding_edit_session_stays_open(tmp_path: 
 
 def test_host_close_guard_delegates_to_onboarding_workspace_and_stops_sync_after_accept(tmp_path: Path) -> None:
     host = _host(tmp_path, role="admin", store=_store(tmp_path, "close-guard.sqlite3"))
-    host.onboarding_workspace.request_close = lambda: False
+    workspace = host.ensure_onboarding_workspace()
+    assert workspace is not None
+    workspace.request_close = lambda: False
     assert host.request_onboarding_close() is False
     assert host.onboarding_sync_timer.isActive()
 
-    host.onboarding_workspace.request_close = lambda: True
+    workspace.request_close = lambda: True
     assert host.request_onboarding_close() is True
     assert host.onboarding_sync_timer.isActive()
     host.cleanup_onboarding()

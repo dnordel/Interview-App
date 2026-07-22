@@ -11,16 +11,15 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Callable, Literal
 from uuid import uuid4
 import re
-from pypdf import PdfReader
 
 from onboarding_attachments import WindowsDefenderAttachmentScanner, validate_task_attachment
-from onboarding_pdf_fill import AcroFormField, PdfFillEngine, detect_acroform_fields
 from onboarding_store import DocumentPackageVersion, FilledArtifact, IntakeField, IntakeSubmission, OnboardingEmployee, OnboardingStore, OnboardingTask, OwnerRoleConfig, PackageDocument, PdfFieldMapping, TaskAttachment, TaskComment, TaskCommentRevision, TaskTemplateAttachment, TaskTemplateVersion
 from onboarding_reminders_v2 import OnboardingReminderCoordinator, ReminderPreview, ReminderPreviewMessage, ReminderSendResult
 from onboarding_staffing_bridge import DirectorIdentity
 from onboarding_vault import EncryptedArtifactVault, OnboardingVault
 
 if TYPE_CHECKING:
+    from onboarding_pdf_fill import AcroFormField
     from onboarding_sync import OnboardingSyncCoordinator
 
 
@@ -1592,6 +1591,8 @@ class OnboardingService:
         return self.store.list_pdf_mappings()
 
     def preview_pdf_mapping(self, source_path: Path) -> PdfMappingPreviewResult:
+        from onboarding_pdf_fill import PdfFillEngine, detect_acroform_fields
+
         self._require_admin("PDF mapping preview")
         source = Path(source_path).resolve(strict=True)
         fields = {field.id: field for field in self.store.list_intake_fields()}
@@ -1909,6 +1910,8 @@ class OnboardingService:
         return package
 
     def validate_document_package(self, package_version_id: str) -> tuple[str, ...]:
+        from pypdf import PdfReader
+
         self._require_admin("Document packages")
         package = self.store.get_document_package(
             _required_text(package_version_id, "Package version ID")
@@ -2020,6 +2023,8 @@ class OnboardingService:
         package_version_id: str,
         publish_sync: bool = True,
     ) -> GeneratedPackageArtifacts:
+        from onboarding_pdf_fill import PdfFillEngine
+
         self.sync_pending()
         if self.artifact_vault is None:
             raise ValueError("Encrypted onboarding artifact vault is unavailable.")
