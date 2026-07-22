@@ -2,8 +2,8 @@ module:
   name: staffing_service
   language: python
   path: src/staffing_service.py
-  version: 0.33.0
-  description: Staffing assignment state machine with Offer Pending reservation/acceptance/decline transitions, optional bidirectional cross-database immutable change staging, atomic destination verification/self-repair, causal conflict resolution, service-backed classroom, position, person creation/edit/deactivation, managed permit attachment storage, director interview referral/completion tracking with optional pending-queue fallback, mistaken-position deletion, queued Dropbox edit handling, staffing dashboard metrics, confirmed person moves, editable assignment details, and post-commit notifications.
+  version: 0.34.0
+  description: Staffing assignment state machine with Offer Pending reservation/acceptance/decline transitions, optional bidirectional cross-database immutable change staging, atomic destination verification/self-repair, field-level causal merge and convergent conflict resolution, service-backed classroom, position, person creation/edit/deactivation, managed permit attachment storage, director interview referral/completion tracking with optional pending-queue fallback, mistaken-position deletion, queued Dropbox edit handling, staffing dashboard metrics, confirmed person moves, editable assignment details, and post-commit notifications.
 functions:
 - name: staffing_change_conflict_message
   locked: false
@@ -29,7 +29,7 @@ classes:
     inputs: {}
     returns: {type: int}
     exceptions: [OSError, sqlite3.Error, JSONDecodeError]
-    side_effects: Replays ordered peer events into only this service's local staffing DB, reconciles acknowledged Director Interview events lacking a same-database destination proof, atomically verifies interview and candidate-contact fields before recording proof, self-repairs absent/partial destinations, avoids duplicate replay after a verified crash window, compares causal snapshots, prompts for conflicts, independently acknowledges outcomes, and stops fail-closed at a lock, invalid event, failed verification, or unresolved conflict.
+    side_effects: Replays ordered peer events into only this service's local staffing DB, reconciles acknowledged Director Interview events lacking a same-database destination proof, atomically verifies interview and candidate-contact fields before recording proof, self-repairs absent/partial destinations, silently merges disjoint assignment/person/classroom fields, prompts only for contradictory same-field or destructive conflicts, applies non-conflicting fields regardless of the choice, publishes deterministic timestamp/event-id conflict resolutions so replicas converge without repeat prompts, independently acknowledges outcomes, and stops fail-closed at a lock, invalid event, failed verification, or unresolved conflict.
   - name: open_position
     inputs:
       assignment_id:
@@ -687,7 +687,7 @@ classes:
 data_structures:
 - name: StaffingChangeConflict
   type: dataclass
-  description: Causal same-entity conflict containing event/source metadata plus base, current-local, and remote change payloads for a user decision.
+  description: Causal same-field conflict containing event/source metadata, base/current/remote state, exact conflicting field paths, and authorized local/incoming display values for one user decision.
 - name: STAFFING_NOTIFICATION_EVENTS
   type: dict[str, str]
 dependencies:

@@ -52,7 +52,7 @@ services:
     - notification_service
     - notification_templates
   staffing_dashboard_service:
-    description: Lock-isolated SQLite staffing assignment state machines including first-Need-Now Offer Pending reservation, acceptance, reversible decline, Teacher-only migration, immutable event synchronization, causal conflict prompts, and shared Staffing v2 shell/dashboard surfaces.
+    description: Lock-isolated SQLite staffing assignment state machines including first-Need-Now Offer Pending reservation, acceptance, reversible decline, Teacher-only migration, immutable event synchronization, silent disjoint-field merges, same-field conflict prompts, deterministic convergent resolutions, and shared Staffing v2 shell/dashboard surfaces.
     modules:
     - dashboard_v2_ui
     - staffing_models

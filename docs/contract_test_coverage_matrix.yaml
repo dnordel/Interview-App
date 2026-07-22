@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-22T18:14:56.807260+00:00'
+generated_at_utc: '2026-07-22T19:18:10.843360+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -15206,6 +15206,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_store.contract.yaml
+  symbol: staffing_store.StaffingStore.record_sync_resolution
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_store.contract.yaml
   symbol: staffing_store.StaffingStore.remove_pending_director_referral_for_reconciliation
   kind: method
   tests:
@@ -15243,6 +15252,24 @@ entries:
     - return_type
 - contract: contracts/staffing_store.contract.yaml
   symbol: staffing_store.StaffingStore.seed_assignment
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_store.contract.yaml
+  symbol: staffing_store.StaffingStore.set_assignment_active
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_store.contract.yaml
+  symbol: staffing_store.StaffingStore.sync_resolution_is_newer
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

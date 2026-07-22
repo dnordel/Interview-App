@@ -8827,6 +8827,11 @@ entries:
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
+- nodeid: tests/test_staffing_change_stage.py::test_conflict_message_shows_only_conflicting_local_and_incoming_values
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_staffing_change_stage.py::test_independent_machine_events_survive_dropbox_merge
   duration_seconds_n2: 0.028
   duration_source: measured
@@ -8852,6 +8857,26 @@ entries:
   duration_source: measured
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_staffing_change_stage.py::test_simultaneous_different_fields_on_same_position_merge_without_prompt
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_change_stage.py::test_rejected_same_field_conflict_still_applies_non_conflicting_fields
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_change_stage.py::test_conflict_choices_publish_resolution_and_replicas_converge
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_change_stage.py::test_incoming_delete_prompts_when_receiver_changed_record
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_staffing_change_stage.py::test_sequential_peer_edits_on_same_position_do_not_prompt
   duration_seconds_n2: 0.474
   duration_source: measured
@@ -8867,9 +8892,24 @@ entries:
   duration_source: measured
   gui_heavy: false
   placement: fast
+- nodeid: tests/test_staffing_change_stage.py::test_simultaneous_different_person_fields_merge_without_prompt
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_change_stage.py::test_person_conflict_resolution_converges_without_repeat_prompt
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_staffing_change_stage.py::test_classroom_edit_replays_to_peer_database
   duration_seconds_n2: 0.417
   duration_source: measured
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_change_stage.py::test_simultaneous_different_classroom_fields_merge_without_prompt
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_staffing_change_stage.py::test_classroom_add_and_deactivate_replay_to_peer_database
