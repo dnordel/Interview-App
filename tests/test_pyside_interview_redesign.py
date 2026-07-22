@@ -1192,6 +1192,43 @@ def test_accepted_offer_handoff_refreshes_running_onboarding_workspace() -> None
     assert refreshed == [True]
 
 
+def test_offer_decision_staffing_callbacks_use_history_linkage(tmp_path: Path, monkeypatch) -> None:
+    staffing_path = tmp_path / "hawthorne.sqlite3"
+    monkeypatch.setattr(
+        pyside_interview_app,
+        "staffing_db_path_for_school",
+        lambda _school, base_path=None: staffing_path,
+    )
+    monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", tmp_path / "shared.sqlite3")
+    store = pyside_interview_app.StaffingStore(staffing_path)
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Hawthorne", classroom="Harmony 1", position_name="Teacher 1",
+        position_type="Teacher", status="need_now",
+    )
+    service = pyside_interview_app.StaffingService(store, clock=lambda: "2026-07-06T09:00:00Z")
+    referral = service.upsert_director_candidate_referral(
+        history_id="hist-callback", candidate_name="Jordan Lee", school="Hawthorne",
+        position="Teacher", interviewer_outcome="hire", candidate_email="jordan@example.org",
+    )
+    service.record_director_interview(
+        referral.id, director_name="Director", completed_date="2026-07-06", rating=9,
+        decision="hire", decision_notes="Hire.", proposed_shift_start="8:00 AM",
+        proposed_shift_end="5:00 PM", proposed_classroom="Harmony 1", offer_position_id="teacher",
+    )
+    window_class = getattr(pyside_interview_app, "PySide" + "InterviewWindow")
+    window = object.__new__(window_class)
+    application = SimpleNamespace(history_id="hist-callback", school="Hawthorne")
+
+    window._decline_hiring_offer_in_staffing(application, SimpleNamespace())
+    assert store.get_assignment(assignment_id).status == "need_now"
+
+    window._accept_hiring_offer_in_staffing(
+        application, SimpleNamespace(start_date="2026-08-03", terms={})
+    )
+    assert store.get_assignment(assignment_id).status == "coming"
+
+
 def test_cancelled_onboarding_restart_does_not_launch_replacement(monkeypatch) -> None:
     window = object.__new__(pyside_interview_app.PySideInterviewWindow)
     window._request_window_close = lambda: False
@@ -4238,6 +4275,13 @@ def test_director_hire_sync_creates_one_pending_offer_with_derived_terms(tmp_pat
     monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", staffing_path)
     staffing_store = pyside_interview_app.StaffingStore(staffing_path)
     staffing_store.initialize()
+    staffing_store.seed_assignment(
+        school="Palmdale",
+        classroom="Chef",
+        position_name="Teacher 1",
+        position_type="Teacher",
+        status="need_now",
+    )
     staffing = pyside_interview_app.StaffingService(staffing_store)
     referral = staffing.upsert_director_candidate_referral(
         history_id="hist-auto-offer",
@@ -4354,6 +4398,13 @@ def test_director_hire_sync_migrates_existing_staffing_db_before_contact_read(
     monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", staffing_path)
     staffing_store = pyside_interview_app.StaffingStore(staffing_path)
     staffing_store.initialize()
+    staffing_store.seed_assignment(
+        school="Palmdale",
+        classroom="Chef",
+        position_name="Teacher 1",
+        position_type="Teacher",
+        status="need_now",
+    )
     staffing = pyside_interview_app.StaffingService(staffing_store)
     referral = staffing.upsert_director_candidate_referral(
         history_id="hist-legacy-staffing",
@@ -5274,7 +5325,7 @@ def test_pyside_staffing_v2_dashboard_renders_parallel_main_dashboard_without_mu
         qt_core.Qt.WidgetAttribute.WA_TransparentForMouseEvents
     )
     count_label = first_row_widget.findChild(qt_widgets.QLabel, "StaffingV2ClassroomItemCounts")
-    assert count_label.text() == "Need 1 · Replace 0\nComing 0 · Filled 1\nDon't Need 0"
+    assert count_label.text() == "Need 1 · Replace 0\nOffer Pending 0 · Coming 0\nFilled 1 · Don't Need 0"
     assert count_label.wordWrap()
     assert first_row_widget.minimumHeight() >= 120
     assert count_label.minimumHeight() >= count_label.fontMetrics().lineSpacing() * 3
@@ -6128,7 +6179,7 @@ def test_pyside_staffing_v2_notifications_manager_dashboard_scenario(
                                 "slots": [
                                     {"position_name": "Teacher 1", "position_type": "Teacher", "status": "need_now"}
                                 ],
-                            }
+                            },
                         ],
                     }
                 ]
@@ -7415,8 +7466,8 @@ def test_pyside_staffing_v2_mark_coming_dialog_saves_through_service(
                                 "licensed_capacity": 24,
                                 "slots": [
                                     {
-                                        "position_name": "Aide 2",
-                                        "position_type": "Aide",
+                                        "position_name": "Teacher 2",
+                                        "position_type": "Teacher",
                                         "status": "need_now",
                                         "current_opened_date": "2026-07-01",
                                     }
@@ -7433,7 +7484,7 @@ def test_pyside_staffing_v2_mark_coming_dialog_saves_through_service(
     store = pyside_interview_app.StaffingStore(db_path)
     store.initialize()
     store.import_seed_file(seed_path)
-    assignment_id = next(row.id for row in store.list_assignments() if row.position_name == "Aide 2")
+    assignment_id = next(row.id for row in store.list_assignments() if row.position_name == "Teacher 2")
     monkeypatch.setattr(pyside_interview_app, "STAFFING_DB_PATH", db_path)
     monkeypatch.setattr(pyside_interview_app, "STAFFING_SEED_PATH", tmp_path / "missing_seed.json")
     model = build_interview_redesign_model(
@@ -7447,7 +7498,7 @@ def test_pyside_staffing_v2_mark_coming_dialog_saves_through_service(
     page = window.stack.currentWidget()
     table = page.findChild(qt_widgets.QTableWidget, "StaffingV2PositionsTable")
 
-    _staffing_button_for_position(table, "Aide 2").click()
+    _staffing_button_for_position(table, "Teacher 2").click()
     app.processEvents()
 
     assert window.window.findChild(qt_widgets.QDialog, "PySideStaffingMarkComingDialog") is None
@@ -7974,8 +8025,8 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
     sofia_assignment_id = store.seed_assignment(
         school="North Long Beach",
         classroom="Unity 1",
-        position_name="Aide 1",
-        position_type="Aide",
+        position_name="Teacher 2",
+        position_type="Teacher",
         status="filled",
         person_name="Sofia Ramirez",
         permit_status="permit_in_process",
@@ -8046,17 +8097,17 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
     people_filter_drawer.findChild(qt_widgets.QPushButton, "StaffingV2PeopleFilterApply").click()
     app.processEvents()
     filtered_table = page.findChild(qt_widgets.QTableWidget, "StaffingV2PeopleTable")
-    assert filtered_table.rowCount() == 1
-    assert filtered_table.item(0, 0).text() == "Maria Gonzalez"
-    assert page.findChild(qt_widgets.QLabel, "StaffingV2PeopleResultCount").text() == "Showing 1 to 1 of 1 people"
+    assert filtered_table.rowCount() == 2
+    assert {filtered_table.item(row, 0).text() for row in range(2)} == {"Maria Gonzalez", "Sofia Ramirez"}
+    assert page.findChild(qt_widgets.QLabel, "StaffingV2PeopleResultCount").text() == "Showing 1 to 2 of 2 people"
     page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleClear").click()
     app.processEvents()
     assert page.findChild(qt_widgets.QPushButton, "StaffingV2PeopleClear").text() == "Clear"
     metric_text = " ".join(_widget_text(card) for card in page.findChildren(qt_widgets.QFrame, "StaffingV2PeopleMetricCard"))
     assert "Total People 2" in metric_text
     assert "Active 2" in metric_text
-    assert "Teachers 1" in metric_text
-    assert "Aides 1" in metric_text
+    assert "Teachers 2" in metric_text
+    assert "Aides" not in metric_text
     assert "Avg Units 12.0" in metric_text
     table = page.findChild(qt_widgets.QTableWidget, "StaffingV2PeopleTable")
     assert table.rowCount() == 2
@@ -8074,7 +8125,7 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
         "Active",
         "Hawthorne\nHarmony 1 - Teacher 1",
         "Sofia Ramirez",
-        "Aide",
+        "Teacher",
         "Permit in Process",
     } <= table_text
     role_badges = {
@@ -8082,12 +8133,9 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
         for row in range(table.rowCount())
     }
     assert role_badges["Maria Gonzalez"].accessibleName() == "Role: Teacher"
-    assert role_badges["Sofia Ramirez"].accessibleName() == "Role: Aide"
+    assert role_badges["Sofia Ramirez"].accessibleName() == "Role: Teacher"
     assert role_badges["Maria Gonzalez"].property("staffingV2Role") == "teacher"
-    assert role_badges["Sofia Ramirez"].property("staffingV2Role") == "aide"
-    assert role_badges["Maria Gonzalez"].property("staffingV2Role") != role_badges["Sofia Ramirez"].property(
-        "staffingV2Role"
-    )
+    assert role_badges["Sofia Ramirez"].property("staffingV2Role") == "teacher"
     for role_badge in role_badges.values():
         assert role_badge.objectName() == "StaffingV2RoleBadge"
         assert not role_badge.findChild(qt_widgets.QLabel, "StaffingV2RoleBadgeIcon").pixmap().isNull()
@@ -8125,12 +8173,12 @@ def test_pyside_staffing_v2_people_dashboard_renders_employee_management_from_db
     assert "Sofia Ramirez" in detail_text
     assert "SR" in detail_text
     assert "Employee Information" in detail_text
-    assert "Role Aide" in detail_text
+    assert "Role Teacher" in detail_text
     assert "Permit Status Permit in Process" in detail_text
     assert "Units 6" in detail_text
     assert "Current Assignment" in detail_text
     assert "North Long Beach" in detail_text
-    assert "Unity 1 - Aide 1" in detail_text
+    assert "Unity 1 - Teacher 2" in detail_text
     assert "Employment Status" in detail_text
     assert "Additional Information" in detail_text
     for detail_card in detail.findChildren(qt_widgets.QFrame, "StaffingV2PeopleDetailCard"):
@@ -8208,7 +8256,7 @@ def test_pyside_staffing_v2_add_person_dialog_creates_person_through_service(
     permit = dialog.findChild(qt_widgets.QComboBox, "StaffingV2AddPersonPermit")
     units = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2AddPersonUnits")
     name.setText("Nina Patel")
-    role.setCurrentText("Aide")
+    role.setCurrentText("Teacher")
     permit.setCurrentText("Permit in Process")
     units.setText("5")
     dialog.findChild(qt_widgets.QPushButton, "StaffingV2AddPersonSave").click()
@@ -8218,7 +8266,7 @@ def test_pyside_staffing_v2_add_person_dialog_creates_person_through_service(
     assert len(people) == len(before_people) + 1
     created = people[0]
     assert created.name == "Nina Patel"
-    assert created.role == "Aide"
+    assert created.role == "Teacher"
     assert created.permit_status == "permit_in_process"
     assert created.units == 5
     assert len(store.list_assignments()) == len(before_assignments)
@@ -9702,7 +9750,16 @@ def test_staffing_v2_director_interviews_sync_pending_history_and_record_complet
                                 "slots": [
                                     {"position_name": "Teacher 2", "position_type": "Teacher", "status": "need_now"}
                                 ],
-                            }
+                            },
+                            {
+                                "name": "Full Room",
+                                "slots": [
+                                    {
+                                        "position_name": "Teacher 1", "position_type": "Teacher",
+                                        "status": "filled", "person": {"name": "Current Teacher"},
+                                    }
+                                ],
+                            },
                         ],
                     },
                     {
@@ -9801,6 +9858,11 @@ def test_staffing_v2_director_interviews_sync_pending_history_and_record_complet
     assert candidate_phone is not None
     assert offer_position is not None
     assert offer_position.currentData() is None
+    available_index = classroom.findText("Harmony 1")
+    unavailable_index = classroom.findText("Full Room")
+    assert classroom.model().item(available_index).background().color().name() == "#fee2e2"
+    assert classroom.model().item(available_index).isEnabled()
+    assert not classroom.model().item(unavailable_index).isEnabled()
     decision.setCurrentText("No-Hire")
     app.processEvents()
     assert not shift_start.isVisible()
@@ -9834,8 +9896,8 @@ def test_staffing_v2_director_interviews_sync_pending_history_and_record_complet
     assert history_table.item(0, 0).text() == ""
     assert history_table.cellWidget(0, 0).text() == "Jordan Lee"
     assignment = next(row for row in window.staffing_store.list_assignments() if row.school == "Hawthorne")
-    assert assignment.status == "need_now"
-    assert assignment.person_name == ""
+    assert assignment.status == "offer_pending"
+    assert assignment.person_name == "Jordan Lee"
     completed = pyside_interview_app.StaffingService(window.staffing_store).list_completed_director_interviews(
         school="Hawthorne"
     )[0]

@@ -2199,6 +2199,8 @@ class PySideInterviewWindow:
             send_offer=notification_adapter,
             notify_offer_accepted=notification_adapter.offer_accepted,
             onboarding_accept_offer=self._accept_hiring_offer_into_onboarding,
+            staffing_decline_offer=self._decline_hiring_offer_in_staffing,
+            staffing_accept_offer=self._accept_hiring_offer_in_staffing,
             prepare_offer_artifacts=self._generate_hiring_offer_artifacts,
         )
         service.backfill_history()
@@ -2846,6 +2848,35 @@ class PySideInterviewWindow:
         )
         workspace.refresh_after_handoff()
         return employee
+
+    def _staffing_service_for_hiring_application(self, application: Any) -> StaffingService:
+        history_id = str(application.history_id or "").strip()
+        school = str(application.school or "").strip()
+        if not history_id or not school:
+            raise ValueError("Hiring application staffing linkage is incomplete.")
+        shared_path = Path(STAFFING_DB_PATH)
+        school_path = staffing_db_path_for_school(school, base_path=shared_path)
+        for path in dict.fromkeys((school_path, shared_path)):
+            if not path.is_file():
+                continue
+            store = StaffingStore(path)
+            store.initialize()
+            if any(row.offer_history_id == history_id for row in store.list_assignments()):
+                return StaffingService(store)
+        raise ValueError("Linked Offer Pending staffing assignment was not found.")
+
+    def _decline_hiring_offer_in_staffing(self, application: Any, _version: Any) -> Any:
+        return self._staffing_service_for_hiring_application(application).decline_pending_offer(
+            str(application.history_id)
+        )
+
+    def _accept_hiring_offer_in_staffing(self, application: Any, version: Any) -> Any:
+        start_date = str(version.start_date or version.terms.get("start_date") or "").strip()
+        if not start_date:
+            raise ValueError("Accepted offer start date is required for staffing handoff.")
+        return self._staffing_service_for_hiring_application(application).accept_pending_offer(
+            str(application.history_id), start_date=start_date
+        )
 
     def _director_offer_terms(self, application: Any, candidate: Any, interview: Any) -> dict[str, Any]:
         schedule = derive_offer_schedule(interview.proposed_shift_start, interview.proposed_shift_end)

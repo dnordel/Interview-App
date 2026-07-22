@@ -1001,6 +1001,61 @@ def test_deadline_extension_does_not_change_document_and_only_latest_sent_can_be
     assert accepted.stage is HiringStage.ACCEPTED
 
 
+def test_mark_offer_not_accepted_keeps_application_active_and_reopens_staffing(tmp_path: Path) -> None:
+    store = HiringPipelineStore(tmp_path / "history.sqlite3")
+    staffing_handoffs: list[tuple[str, str]] = []
+    service = HiringWorkflowService(
+        store,
+        staffing_decline_offer=lambda application, version: staffing_handoffs.append(
+            (application.history_id, version.version_id)
+        ),
+    )
+    application = service.start_application(
+        legal_name="Nia King", email="nia@example.org", phone="", school="Hawthorne",
+        position="Teacher", actor="Interviewer",
+    )
+    store.update_application_stage(application.application_id, HiringStage.OFFER_DRAFT)
+    offer = service.create_offer_draft(
+        application.application_id, terms={"hourly_pay": "22", "weekly_hours": "40"}, actor="HR",
+    )
+    store.set_offer_status(offer.version_id, "sent")
+    store.update_application_stage(application.application_id, HiringStage.OFFER_SENT)
+
+    updated = service.mark_offer_not_accepted(
+        application.application_id, offer.version_id, actor="Admin"
+    )
+
+    assert updated.stage is HiringStage.OFFER_SENT
+    assert store.get_offer_version(offer.version_id).status == "not_accepted"
+    assert staffing_handoffs == [(application.history_id, offer.version_id)]
+    assert service.store.list_events(application.application_id)[-1].event_type == "offer_not_accepted"
+
+
+def test_not_accepted_offer_can_later_be_accepted(tmp_path: Path) -> None:
+    store = HiringPipelineStore(tmp_path / "history.sqlite3")
+    staffing_accepts: list[str] = []
+    service = HiringWorkflowService(
+        store,
+        staffing_decline_offer=lambda *_args: None,
+        staffing_accept_offer=lambda application, version: staffing_accepts.append(application.history_id),
+    )
+    application = service.start_application(
+        legal_name="Nia King", email="nia@example.org", phone="", school="Hawthorne",
+        position="Teacher", actor="Interviewer",
+    )
+    store.update_application_stage(application.application_id, HiringStage.OFFER_DRAFT)
+    offer = service.create_offer_draft(application.application_id, terms={"start_date": "2026-07-20"}, actor="HR")
+    store.set_offer_status(offer.version_id, "sent")
+    store.update_application_stage(application.application_id, HiringStage.OFFER_SENT)
+    service.mark_offer_not_accepted(application.application_id, offer.version_id, actor="Admin")
+
+    accepted = service.accept_offer(application.application_id, offer.version_id, actor="Admin")
+
+    assert accepted.stage is HiringStage.ACCEPTED
+    assert store.get_offer_version(offer.version_id).status == "accepted"
+    assert staffing_accepts == [application.history_id]
+
+
 def test_archive_hides_application_and_linked_profile_deletion_fails_closed(tmp_path: Path) -> None:
     history_path = tmp_path / "interview_history.sqlite3"
     InterviewHistoryStore(history_path).append(

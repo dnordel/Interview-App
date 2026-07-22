@@ -219,7 +219,6 @@ def test_director_interview_separates_school_positions_from_teacher_classrooms(t
         "lead_teacher": "Lead Teacher",
         "teacher": "Teacher",
         "teacher_floater": "Teacher/Floater",
-        "aide": "Aide",
         "chef": "Chef",
         "swim_instructor": "Swim Instructor",
     }
@@ -351,6 +350,13 @@ def test_director_interview_hire_with_missing_referral_contact_saves_from_dialog
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
     store = StaffingStore(tmp_path / "staffing.sqlite3")
     store.initialize()
+    store.seed_assignment(
+        school="Palmdale",
+        classroom="Floater",
+        position_name="Teacher 1",
+        position_type="Teacher",
+        status="need_now",
+    )
     service = StaffingService(store)
     candidate = service.upsert_director_candidate_referral(
         history_id="hist-save-missing-contact",
@@ -401,6 +407,13 @@ def test_director_interview_validation_error_stays_visible_outside_scroll_body(t
     app = qt_widgets.QApplication.instance() or qt_widgets.QApplication([])
     store = StaffingStore(tmp_path / "staffing.sqlite3")
     store.initialize()
+    store.seed_assignment(
+        school="Palmdale",
+        classroom="Chef",
+        position_name="Teacher 1",
+        position_type="Teacher",
+        status="need_now",
+    )
     service = StaffingService(store)
     candidate = service.upsert_director_candidate_referral(
         history_id="hist-missing-email",

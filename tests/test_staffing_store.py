@@ -22,6 +22,29 @@ def test_concurrent_initialize_tolerates_verified_column_migration_races(tmp_pat
     assert "permit_document_path" in columns
 
 
+def test_initialize_migrates_active_aide_positions_and_people_to_teacher_without_rewriting_history(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    assignment_id = store.create_assignment(
+        school="Hawthorne", classroom="Harmony 1", position_name="Aide 1",
+        position_type="Aide", status="coming", person_name="Jordan Lee",
+        start_date="2026-08-01", now="2026-07-06T09:00:00Z",
+    )
+
+    store.initialize()
+
+    assignment = store.get_assignment(assignment_id)
+    assert assignment.position_name == "Teacher 1"
+    assert assignment.position_type == "Teacher"
+    assert assignment.slot_group == "teacher"
+    assert store.list_people()[0].role == "Teacher"
+    with store.connect() as conn:
+        historical_name = conn.execute(
+            "SELECT position_name FROM assignment_history WHERE assignment_id = ?", (assignment_id,)
+        ).fetchone()[0]
+    assert historical_name == "Aide 1"
+
+
 def test_import_seed_file_is_idempotent_and_lists_assignments(tmp_path: Path) -> None:
     seed_path = tmp_path / "staffing_seed.json"
     seed_path.write_text(
@@ -165,7 +188,9 @@ def test_import_seed_file_supports_workbook_layout_metadata_and_real_school_name
     assert rows[0].classroom_capacity == 16
     assert rows[0].ratio_group == "3 to 1 (infant units needed)"
     assert rows[0].slot_group == "teacher"
-    assert rows[1].slot_group == "aide"
+    assert rows[1].slot_group == "teacher"
+    assert rows[1].position_name == "Teacher 2"
+    assert rows[1].position_type == "Teacher"
     hawthorne_open = [row for row in rows if row.school == "Hawthorne" and row.status == "need_now"][0]
     assert hawthorne_open.notes == "Visible workbook ? cell."
     support = [row for row in rows if row.classroom == "Infant Floater"][0]

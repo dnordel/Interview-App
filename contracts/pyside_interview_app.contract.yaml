@@ -2,7 +2,7 @@ module:
   name: pyside_interview_app
   language: python
   path: src/pyside_interview_app.py
-  version: 9.6.1
+  version: 9.7.0
   description: PySide6 operations shell and headless view-model builder for a mockup-driven
     New Interview setup/live flow using shared candidate and qualification capture, Candidates-owned pipeline/history, candidate reports,
     onboarding, staffing, notifications, and admin-only
@@ -1569,6 +1569,26 @@ classes:
     returns: {type: Any}
     exceptions: [ValueError, OSError, sqlite3.DatabaseError]
     side_effects: Action-loads Onboarding core when needed, idempotently hands accepted offer into OnboardingService, and invalidates inactive Onboarding pages for fresh display.
+  - name: _staffing_service_for_hiring_application
+    inputs:
+      application: {type: Any, required: true}
+    returns: {type: StaffingService}
+    exceptions: [ValueError, OSError, sqlite3.DatabaseError]
+    side_effects: Resolves school-specific then shared Staffing storage by stable interview history linkage and returns the service owning the original Offer Pending assignment; name/contact matching is not used.
+  - name: _decline_hiring_offer_in_staffing
+    inputs:
+      application: {type: Any, required: true}
+      _version: {type: Any, required: true}
+    returns: {type: Any}
+    exceptions: [ValueError, OSError, sqlite3.DatabaseError]
+    side_effects: Routes an admin Not Accepted decision to StaffingService.decline_pending_offer using stable history linkage.
+  - name: _accept_hiring_offer_in_staffing
+    inputs:
+      application: {type: Any, required: true}
+      version: {type: Any, required: true}
+    returns: {type: Any}
+    exceptions: [ValueError, OSError, sqlite3.DatabaseError]
+    side_effects: Requires the persisted offer start date and routes an admin Accepted decision to StaffingService.accept_pending_offer using stable history linkage.
   - name: _invalidate_notification_service
     inputs: {}
     returns: {type: None}

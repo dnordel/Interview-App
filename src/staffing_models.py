@@ -5,7 +5,7 @@ import re
 from typing import Sequence
 
 
-ASSIGNMENT_STATUSES = ("dont_need_now", "need_now", "coming", "filled", "replace")
+ASSIGNMENT_STATUSES = ("dont_need_now", "need_now", "offer_pending", "coming", "filled", "replace")
 PERMIT_STATUSES = (
     "unknown",
     "no_permit_or_application",
@@ -48,6 +48,7 @@ class StaffingAssignment:
     slot_group: str = ""
     notes: str = ""
     display_order: int = 0
+    offer_history_id: str = ""
 
 
 @dataclass(frozen=True)

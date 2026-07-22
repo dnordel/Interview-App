@@ -1541,6 +1541,8 @@ class HiringWorkflowService:
         onboarding_accept_offer: Callable[
             [HiringApplication, CandidateProfile, OfferVersion, str, str], Any
         ] | None = None,
+        staffing_decline_offer: Callable[[HiringApplication, OfferVersion], Any] | None = None,
+        staffing_accept_offer: Callable[[HiringApplication, OfferVersion], Any] | None = None,
         prepare_offer_artifacts: Callable[
             [HiringApplication, CandidateProfile, OfferVersion], tuple[Path, Path]
         ] | None = None,
@@ -1549,6 +1551,8 @@ class HiringWorkflowService:
         self._send_offer = send_offer
         self._notify_offer_accepted = notify_offer_accepted
         self._onboarding_accept_offer = onboarding_accept_offer
+        self._staffing_decline_offer = staffing_decline_offer
+        self._staffing_accept_offer = staffing_accept_offer
         self._prepare_offer_artifacts = prepare_offer_artifacts
 
     def record_initial_interview(self, **values: Any) -> HiringApplication:
@@ -2084,12 +2088,14 @@ class HiringWorkflowService:
     ) -> HiringApplication:
         application = self.store.get_application(application_id)
         versions = self.store.list_offer_versions(application_id)
-        sent_versions = [version for version in versions if version.status == "sent"]
+        sent_versions = [version for version in versions if version.status in {"sent", "not_accepted"}]
         latest = max(sent_versions, key=lambda version: version.version_number, default=None)
         if application.stage is not HiringStage.OFFER_SENT or latest is None:
             raise ValueError("Application has no sent offer to accept.")
         if latest.version_id != version_id:
             raise ValueError("Only the latest sent offer version may be accepted.")
+        if self._staffing_accept_offer is not None:
+            self._staffing_accept_offer(application, latest)
         self.store.set_offer_status(version_id, "accepted")
         accepted = self.store.update_application_stage(application_id, HiringStage.ACCEPTED)
         self.store.append_event(
@@ -2143,6 +2149,32 @@ class HiringWorkflowService:
         if self._notify_offer_accepted is not None:
             self.retry_accepted_notification(application_id, version_id)
         return self.store.get_application(accepted.application_id)
+
+    def mark_offer_not_accepted(
+        self,
+        application_id: str,
+        version_id: str,
+        *,
+        actor: str,
+    ) -> HiringApplication:
+        application = self.store.get_application(application_id)
+        versions = self.store.list_offer_versions(application_id)
+        sent_versions = [version for version in versions if version.status == "sent"]
+        latest = max(sent_versions, key=lambda version: version.version_number, default=None)
+        if application.stage is not HiringStage.OFFER_SENT or latest is None:
+            raise ValueError("Application has no sent offer to mark not accepted.")
+        if latest.version_id != version_id:
+            raise ValueError("Only the latest sent offer version may be marked not accepted.")
+        if self._staffing_decline_offer is not None:
+            self._staffing_decline_offer(application, latest)
+        self.store.set_offer_status(version_id, "not_accepted")
+        self.store.append_event(
+            application_id,
+            "offer_not_accepted",
+            actor=actor,
+            payload={"version_id": version_id, "version_number": latest.version_number},
+        )
+        return self.store.get_application(application_id)
 
     def retry_accepted_notification(self, application_id: str, version_id: str) -> bool:
         application = self.store.get_application(application_id)

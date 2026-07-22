@@ -449,7 +449,9 @@ class HiringWorkspaceV2Page:
         manual_offer.clicked.connect(self._open_external_offer_dialog)
         header.addWidget(manual_offer)
         root.addLayout(header)
-        self.offers_status = self.QtWidgets.QLabel("Draft 0  ·  Approval 0  ·  Sent 0  ·  Accepted 0  ·  Attention 0")
+        self.offers_status = self.QtWidgets.QLabel(
+            "Draft 0  ·  Approval 0  ·  Sent 0  ·  Accepted 0  ·  Not Accepted 0  ·  Attention 0"
+        )
         self.offers_status.setObjectName("HiringV2ActionStatus")
         root.addWidget(self.offers_status)
         pending_title = self.QtWidgets.QLabel("Offers pending approval")
@@ -729,7 +731,7 @@ class HiringWorkspaceV2Page:
                 counts[version.status] += 1
                 if version.status == "pending_approval":
                     pending_rows.append((application, candidate, version))
-                elif version.status in {"approved", "sent", "accepted"}:
+                elif version.status in {"approved", "sent", "accepted", "not_accepted"}:
                     approved_rows.append((application, candidate, version))
         self._populate_offers_table(self.pending_offers_table, pending_rows)
         self._resize_pending_offers_table()
@@ -737,7 +739,8 @@ class HiringWorkspaceV2Page:
         attention = sum(bool(item.attention_code) for item in self.applications)
         self.offers_status.setText(
             f"Draft {counts['draft']}  ·  Approval {counts['pending_approval']}  ·  "
-            f"Sent {counts['sent']}  ·  Accepted {counts['accepted']}  ·  Attention {attention}"
+            f"Sent {counts['sent']}  ·  Accepted {counts['accepted']}  ·  "
+            f"Not Accepted {counts['not_accepted']}  ·  Attention {attention}"
         )
 
     def _populate_offers_table(self, table: Any, rows: list[tuple[Any, Any, Any]]) -> None:
@@ -804,8 +807,11 @@ class HiringWorkspaceV2Page:
                     ("Revise compensation", "revise_compensation"),
                     ("Extend deadline", "extend_deadline"),
                     ("Mark accepted", "accept_offer"),
+                    ("Mark not accepted", "not_accept_offer"),
                 )
             )
+        elif version.status == "not_accepted":
+            action_names.append(("Mark accepted", "accept_offer"))
         for label, action_name in action_names:
             action = menu.addAction(label)
             action.triggered.connect(
@@ -844,6 +850,7 @@ class HiringWorkspaceV2Page:
                 ("Approve pending revision", "approve_revision"),
                 ("Extend deadline", "extend_deadline"),
                 ("Mark accepted", "accept_offer"),
+                ("Mark not accepted", "not_accept_offer"),
             ],
             HiringStage.ACCEPTED: [("View acceptance", "view_acceptance")],
             HiringStage.CLOSED: [("View closeout", "view_closeout")],
@@ -918,12 +925,24 @@ class HiringWorkspaceV2Page:
             sent = [
                 version
                 for version in self.service.store.list_offer_versions(application.application_id)
-                if version.status == "sent"
+                if version.status in {"sent", "not_accepted"}
             ]
             if not sent:
                 raise ValueError("No sent offer is available.")
             latest = max(sent, key=lambda version: version.version_number)
             result = self.service.accept_offer(application.application_id, latest.version_id, actor=actor)
+        elif name == "not_accept_offer":
+            sent = [
+                version
+                for version in self.service.store.list_offer_versions(application.application_id)
+                if version.status == "sent"
+            ]
+            if not sent:
+                raise ValueError("No sent offer is available.")
+            latest = max(sent, key=lambda version: version.version_number)
+            result = self.service.mark_offer_not_accepted(
+                application.application_id, latest.version_id, actor=actor
+            )
         elif name == "extend_deadline":
             versions = self.service.store.list_offer_versions(application.application_id)
             sent = [version for version in versions if version.status == "sent"]
@@ -1031,11 +1050,17 @@ class HiringWorkspaceV2Page:
                 self.perform_action(name, application, values={"reply_by_date": value})
                 self._set_action_state("success", "Hiring action completed.")
                 return
-            if name in {"archive", "accept_offer"}:
+            if name in {"archive", "accept_offer", "not_accept_offer"}:
                 answer = self.QtWidgets.QMessageBox.question(
                     self.widget,
                     "Confirm hiring action",
-                    "Archive this application?" if name == "archive" else "Mark latest sent offer accepted?",
+                    "Archive this application?"
+                    if name == "archive"
+                    else (
+                        "Mark latest sent offer accepted?"
+                        if name == "accept_offer"
+                        else "Mark latest sent offer not accepted?"
+                    ),
                 )
                 if answer != self.QtWidgets.QMessageBox.StandardButton.Yes:
                     self._set_action_state("ready", "Hiring action cancelled.")

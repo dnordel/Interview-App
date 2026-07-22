@@ -135,17 +135,14 @@ def test_primary_admin_vbs_launcher_starts_pyside_setup_hidden() -> None:
     assert "..START PROGRAM.bat" not in launcher_text
 
 
-def test_primary_admin_vbs_stays_thin_and_setup_creates_portable_shortcut() -> None:
+def test_primary_admin_vbs_and_setup_do_not_create_desktop_shortcuts() -> None:
     launcher_text = Path("..START PROGRAM.vbs").read_text(encoding="utf-8")
     setup_text = SETUP_SCRIPT.read_text(encoding="utf-8")
 
     assert "CreateShortcut" not in launcher_text
-    assert "function Install-StaffingDesktopShortcut" in setup_text
-    assert 'Join-Path $AppDir "assets\\staffing_app.ico"' in setup_text
-    assert '"Staffing App.lnk"' in setup_text
-    assert '$shortcut.TargetPath = $launcherPath' in setup_text
-    assert '$shortcut.IconLocation = "$iconPath,0"' in setup_text
-    assert "Install-StaffingDesktopShortcut" in setup_text
+    assert "CreateShortcut" not in setup_text
+    assert "Install-StaffingDesktopShortcut" not in setup_text
+    assert '"Staffing App.lnk"' not in setup_text
 
 
 def test_setup_and_run_launches_runtime_wrapper_with_venv_python() -> None:

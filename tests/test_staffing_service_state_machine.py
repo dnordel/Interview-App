@@ -644,13 +644,20 @@ def test_delete_position_rejects_assigned_position(tmp_path: Path) -> None:
     assert len(store.list_assignments()) == 1
 
 
-def test_director_interview_completion_is_school_scoped_and_does_not_fill_position(tmp_path: Path) -> None:
+def test_director_interview_hire_reserves_first_need_now_position(tmp_path: Path) -> None:
     store = StaffingStore(tmp_path / "staffing.sqlite3")
     store.initialize()
     assignment_id = store.seed_assignment(
         school="Hawthorne",
         classroom="Harmony 1",
         position_name="Teacher 2",
+        position_type="Teacher",
+        status="need_now",
+    )
+    later_assignment_id = store.seed_assignment(
+        school="Hawthorne",
+        classroom="Harmony 1",
+        position_name="Teacher 3",
         position_type="Teacher",
         status="need_now",
     )
@@ -717,13 +724,138 @@ def test_director_interview_completion_is_school_scoped_and_does_not_fill_positi
         history_id="hist-1",
         school="Palmdale",
     ) is None
-    assert assignment.status == "need_now"
-    assert assignment.person_name == ""
+    assert assignment.status == "offer_pending"
+    assert assignment.person_name == "Jordan Lee"
+    assert assignment.position_type == "Teacher"
     assert assignment.classroom == "Harmony 1"
+    assert store.get_assignment(later_assignment_id).status == "need_now"
     palmdale_pending = service.list_pending_director_interviews(school="Palmdale")
     assert service.delete_pending_director_interviews([palmdale_pending[0].id, result.referral_id]) == 1
     assert service.list_pending_director_interviews(school="Palmdale") == []
     assert service.list_completed_director_interviews(school="Hawthorne")[0].candidate_name == "Jordan Lee"
+
+
+def test_director_interview_hire_without_need_now_position_saves_nothing(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    store.seed_assignment(
+        school="Hawthorne",
+        classroom="Harmony 1",
+        position_name="Teacher 1",
+        position_type="Teacher",
+        status="filled",
+        person_name="Current Teacher",
+    )
+    service = StaffingService(store)
+    referral = service.upsert_director_candidate_referral(
+        history_id="hist-no-slot",
+        candidate_name="Jordan Lee",
+        school="Hawthorne",
+        position="Teacher",
+        interviewer_outcome="hire",
+        candidate_email="jordan@example.org",
+    )
+
+    with pytest.raises(ValueError, match="no Need Now position available"):
+        service.record_director_interview(
+            referral.id,
+            director_name="Avery Director",
+            completed_date="2026-07-06",
+            rating=9,
+            decision="hire",
+            decision_notes="Strong fit.",
+            proposed_shift_start="8:00 AM",
+            proposed_shift_end="5:00 PM",
+            proposed_classroom="Harmony 1",
+            offer_position_id="teacher",
+        )
+
+    assert service.list_completed_director_interviews(school="Hawthorne") == []
+    assert service.list_pending_director_interviews(school="Hawthorne") == [referral]
+    assert store.list_assignments()[0].person_name == "Current Teacher"
+
+
+def test_accept_pending_offer_marks_reserved_position_coming(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Hawthorne", classroom="Harmony 1", position_name="Teacher 1",
+        position_type="Teacher", status="need_now",
+    )
+    service = StaffingService(store, clock=lambda: "2026-07-06T09:00:00Z")
+    referral = service.upsert_director_candidate_referral(
+        history_id="hist-accept", candidate_name="Jordan Lee", school="Hawthorne",
+        position="Teacher", interviewer_outcome="hire", candidate_email="jordan@example.org",
+    )
+    service.record_director_interview(
+        referral.id, director_name="Avery Director", completed_date="2026-07-06", rating=9,
+        decision="hire", decision_notes="Strong fit.", proposed_shift_start="8:00 AM",
+        proposed_shift_end="5:00 PM", proposed_classroom="Harmony 1", offer_position_id="teacher",
+    )
+
+    result = service.accept_pending_offer("hist-accept", start_date="2026-07-20")
+
+    assignment = store.get_assignment(assignment_id)
+    assert result.status == "coming"
+    assert assignment.status == "coming"
+    assert assignment.person_name == "Jordan Lee"
+    assert assignment.start_date == "2026-07-20"
+
+
+def test_decline_pending_offer_reopens_position_and_retains_candidate_profile(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Hawthorne", classroom="Harmony 1", position_name="Teacher 1",
+        position_type="Teacher", status="need_now",
+    )
+    service = StaffingService(store, clock=lambda: "2026-07-06T09:00:00Z")
+    referral = service.upsert_director_candidate_referral(
+        history_id="hist-decline", candidate_name="Jordan Lee", school="Hawthorne",
+        position="Teacher", interviewer_outcome="hire", candidate_email="jordan@example.org",
+    )
+    service.record_director_interview(
+        referral.id, director_name="Avery Director", completed_date="2026-07-06", rating=9,
+        decision="hire", decision_notes="Strong fit.", proposed_shift_start="8:00 AM",
+        proposed_shift_end="5:00 PM", proposed_classroom="Harmony 1", offer_position_id="teacher",
+    )
+
+    result = service.decline_pending_offer("hist-decline")
+
+    assignment = store.get_assignment(assignment_id)
+    assert result.status == "need_now"
+    assert assignment.status == "need_now"
+    assert assignment.person_id is None
+    assert assignment.person_name == ""
+    assert [person.name for person in store.list_people()] == ["Jordan Lee"]
+    assert assignment.offer_history_id == "hist-decline"
+
+
+def test_accept_declined_offer_reclaims_original_need_now_position(tmp_path: Path) -> None:
+    store = StaffingStore(tmp_path / "staffing.sqlite3")
+    store.initialize()
+    assignment_id = store.seed_assignment(
+        school="Hawthorne", classroom="Harmony 1", position_name="Teacher 1",
+        position_type="Teacher", status="need_now",
+    )
+    service = StaffingService(store, clock=lambda: "2026-07-06T09:00:00Z")
+    referral = service.upsert_director_candidate_referral(
+        history_id="hist-reverse", candidate_name="Jordan Lee", school="Hawthorne",
+        position="Teacher", interviewer_outcome="hire", candidate_email="jordan@example.org",
+    )
+    service.record_director_interview(
+        referral.id, director_name="Avery Director", completed_date="2026-07-06", rating=9,
+        decision="hire", decision_notes="Strong fit.", proposed_shift_start="8:00 AM",
+        proposed_shift_end="5:00 PM", proposed_classroom="Harmony 1", offer_position_id="teacher",
+    )
+    service.decline_pending_offer("hist-reverse")
+
+    result = service.accept_pending_offer("hist-reverse", start_date="2026-07-20")
+
+    assignment = store.get_assignment(assignment_id)
+    assert result.status == "coming"
+    assert assignment.status == "coming"
+    assert assignment.person_name == "Jordan Lee"
 
 
 def test_director_interview_records_school_non_teacher_position_without_classroom(tmp_path: Path) -> None:
@@ -823,6 +955,13 @@ def test_director_interview_validation_requires_notes_and_hire_shift_details(tmp
 def test_director_hire_requires_email_but_phone_is_optional(tmp_path: Path) -> None:
     store = StaffingStore(tmp_path / "staffing.sqlite3")
     store.initialize()
+    store.seed_assignment(
+        school="Hawthorne",
+        classroom="Harmony 1",
+        position_name="Teacher 1",
+        position_type="Teacher",
+        status="need_now",
+    )
     service = StaffingService(store, clock=_Clock(["2026-07-06T09:00:00Z", "2026-07-06T09:05:00Z"]))
     referral = service.upsert_director_candidate_referral(
         history_id="hist-contact",

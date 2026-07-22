@@ -2,7 +2,7 @@ module:
   name: setup_and_run
   language: powershell
   path: setup_and_run.ps1
-  version: 2.1.0
+  version: 3.0.0
   description: Windows launcher bootstrap that checks prerequisites, installs Python
     3.11 when needed, provisions a per-user virtual environment that can reuse system
     site packages under LOCALAPPDATA instead of the repository folder, installs
@@ -12,7 +12,7 @@ module:
     PySide app in director staffing-only mode filtered to one school while reusing
     the same setup path. Repeat launches use a validated fingerprint/path/venv fast path that skips unchanged setup and hardware probes. The root admin VBS launcher stays minimal for antivirus
     compatibility and invokes this setup path in PySide mode with its console window
-    hidden; setup creates or repairs its desktop shortcut with the bundled Staffing icon.
+    hidden. Launching does not create or update desktop shortcuts.
 functions:
 - name: Write-Log
   description: Append launcher diagnostics to the setup log file.
@@ -25,14 +25,6 @@ functions:
     type: void
   exceptions: []
   side_effects: writes launcher log entries
-- name: Install-StaffingDesktopShortcut
-  description: Create or repair the current user's Staffing App desktop shortcut so it targets the minimal admin VBS launcher and uses the bundled repo-owned icon; shortcut-policy failures are logged without blocking app launch.
-  locked: false
-  inputs: {}
-  returns:
-    type: void
-  exceptions: []
-  side_effects: May create or update Staffing App.lnk on the current user's Desktop and writes launcher diagnostics.
 - name: Get-ConfigBaseDir
   description: Ensure the per-user configuration directory exists under LOCALAPPDATA
     and return it.

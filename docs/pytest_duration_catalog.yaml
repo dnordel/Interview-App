@@ -466,7 +466,7 @@ entries:
   duration_source: measured
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_director_staffing_launcher.py::test_director_setup_creates_school_specific_portable_desktop_shortcut
+- nodeid: tests/test_director_staffing_launcher.py::test_director_setup_does_not_create_desktop_shortcuts
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
@@ -809,6 +809,16 @@ entries:
 - nodeid: tests/test_hiring_pipeline.py::test_deadline_extension_does_not_change_document_and_only_latest_sent_can_be_accepted
   duration_seconds_n2: 0.615
   duration_source: measured
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_hiring_pipeline.py::test_mark_offer_not_accepted_keeps_application_active_and_reopens_staffing
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_hiring_pipeline.py::test_not_accepted_offer_can_later_be_accepted
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_hiring_pipeline.py::test_archive_hides_application_and_linked_profile_deletion_fails_closed
@@ -5468,6 +5478,11 @@ entries:
   duration_source: measured
   gui_heavy: true
   placement: gui_wave_3
+- nodeid: tests/test_pyside_interview_redesign.py::test_offer_decision_staffing_callbacks_use_history_linkage
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
 - nodeid: tests/test_pyside_interview_redesign.py::test_cancelled_onboarding_restart_does_not_launch_replacement
   duration_seconds_n2: 0.076
   duration_source: measured
@@ -7252,7 +7267,7 @@ entries:
   duration_source: measured
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_setup_and_run_contract.py::test_primary_admin_vbs_stays_thin_and_setup_creates_portable_shortcut
+- nodeid: tests/test_setup_and_run_contract.py::test_primary_admin_vbs_and_setup_do_not_create_desktop_shortcuts
   duration_seconds_n2: 0.001
   duration_source: collection_default
   gui_heavy: false
@@ -9243,9 +9258,29 @@ entries:
   duration_source: measured
   gui_heavy: false
   placement: fast
-- nodeid: tests/test_staffing_service_state_machine.py::test_director_interview_completion_is_school_scoped_and_does_not_fill_position
-  duration_seconds_n2: 0.486
-  duration_source: measured
+- nodeid: tests/test_staffing_service_state_machine.py::test_director_interview_hire_reserves_first_need_now_position
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_service_state_machine.py::test_director_interview_hire_without_need_now_position_saves_nothing
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_service_state_machine.py::test_accept_pending_offer_marks_reserved_position_coming
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_service_state_machine.py::test_decline_pending_offer_reopens_position_and_retains_candidate_profile
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_service_state_machine.py::test_accept_declined_offer_reclaims_original_need_now_position
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_staffing_service_state_machine.py::test_director_interview_records_school_non_teacher_position_without_classroom
@@ -9376,6 +9411,11 @@ entries:
 - nodeid: tests/test_staffing_store.py::test_concurrent_initialize_tolerates_verified_column_migration_races
   duration_seconds_n2: 0.469
   duration_source: measured
+  gui_heavy: false
+  placement: fast
+- nodeid: tests/test_staffing_store.py::test_initialize_migrates_active_aide_positions_and_people_to_teacher_without_rewriting_history
+  duration_seconds_n2: 0.001
+  duration_source: collection_default
   gui_heavy: false
   placement: fast
 - nodeid: tests/test_staffing_store.py::test_import_seed_file_is_idempotent_and_lists_assignments

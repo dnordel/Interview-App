@@ -12,7 +12,7 @@ sections:
 - name: root
   tests:
   - tests/test_interview_root_contracts.py
-generated_at_utc: '2026-07-22T17:27:15.030260+00:00'
+generated_at_utc: '2026-07-22T18:14:56.807260+00:00'
 regenerate_command: python tools/regenerate_contract_test_matrix.py
 security_test_mapping:
   validation:
@@ -1839,6 +1839,15 @@ entries:
     - return_type
 - contract: contracts/hiring_pipeline.contract.yaml
   symbol: hiring_pipeline.HiringWorkflowService.finalize_initial_interview
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/hiring_pipeline.contract.yaml
+  symbol: hiring_pipeline.HiringWorkflowService.mark_offer_not_accepted
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -8496,6 +8505,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._accept_hiring_offer_in_staffing
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._accept_hiring_offer_into_onboarding
   kind: method
   tests:
@@ -8632,6 +8650,15 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._collect_indeed_transcript_import_request
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._decline_hiring_offer_in_staffing
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -9388,6 +9415,15 @@ entries:
     - return_type
 - contract: contracts/pyside_interview_app.contract.yaml
   symbol: pyside_interview_app.PySideInterviewWindow._staffing_service
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/pyside_interview_app.contract.yaml
+  symbol: pyside_interview_app.PySideInterviewWindow._staffing_service_for_hiring_application
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -11741,15 +11777,6 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/setup_and_run.contract.yaml
-  symbol: setup_and_run.Install-StaffingDesktopShortcut
-  kind: function
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/setup_and_run.contract.yaml
   symbol: setup_and_run.Load-Config
   kind: function
   tests:
@@ -11922,15 +11949,6 @@ entries:
     - return_type
 - contract: contracts/setup_director_staffing.contract.yaml
   symbol: setup_director_staffing.Find-Python311
-  kind: function
-  tests:
-  - path: tests/test_contract_coverage_matrix.py
-    focus:
-    - behavior
-    - parameter_validation
-    - return_type
-- contract: contracts/setup_director_staffing.contract.yaml
-  symbol: setup_director_staffing.Install-DirectorStaffingDesktopShortcut
   kind: function
   tests:
   - path: tests/test_contract_coverage_matrix.py
@@ -14450,6 +14468,15 @@ entries:
     - parameter_validation
     - return_type
 - contract: contracts/staffing_service.contract.yaml
+  symbol: staffing_service.StaffingService.accept_pending_offer
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_service.contract.yaml
   symbol: staffing_service.StaffingService.add_classroom
   kind: method
   tests:
@@ -14514,6 +14541,15 @@ entries:
     - return_type
 - contract: contracts/staffing_service.contract.yaml
   symbol: staffing_service.StaffingService.deactivate_person
+  kind: method
+  tests:
+  - path: tests/test_contract_coverage_matrix.py
+    focus:
+    - behavior
+    - parameter_validation
+    - return_type
+- contract: contracts/staffing_service.contract.yaml
+  symbol: staffing_service.StaffingService.decline_pending_offer
   kind: method
   tests:
   - path: tests/test_contract_coverage_matrix.py

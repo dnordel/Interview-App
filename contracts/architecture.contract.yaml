@@ -6,7 +6,7 @@ layers:
 - infrastructure
 services:
   hiring_pipeline_service:
-    description: Canonical seven-stage candidate application pipeline, teacher qualification and versioned starting-pay calculation, audit timeline, Staffing v2 decision synchronization, numbered offers with pre-generated DOCX/PDF artifacts and version-bound SQL template snapshots, increment-enforced Admin pay revisions, approval without candidate email, delayed email delivery, safely constrained offer-only deletion, negotiation, acceptance, and archive controls.
+    description: Canonical seven-stage candidate application pipeline, teacher qualification and versioned starting-pay calculation, audit timeline, Staffing v2 decision synchronization, numbered offers, increment-enforced Admin revisions, delayed email delivery, safely constrained deletion, and reversible admin Accepted/Not Accepted controls that drive history-linked Staffing Coming/Need Now transitions.
     modules:
     - dashboard_v2_ui
     - hiring_pipeline
@@ -52,7 +52,7 @@ services:
     - notification_service
     - notification_templates
   staffing_dashboard_service:
-    description: Lock-isolated SQLite staffing assignment state machines synchronized through immutable per-user JSON event outboxes, predecessor chains that tolerate delayed/out-of-order Dropbox delivery, per-database receipts, and atomic destination proofs that self-repair missing/partial Director Interview deliveries, with causal conflict prompts, plus the shared Staffing v2 shell, theme, cards, overlays, navigation, and dashboard surfaces including notification rule management and test-send UI.
+    description: Lock-isolated SQLite staffing assignment state machines including first-Need-Now Offer Pending reservation, acceptance, reversible decline, Teacher-only migration, immutable event synchronization, causal conflict prompts, and shared Staffing v2 shell/dashboard surfaces.
     modules:
     - dashboard_v2_ui
     - staffing_models

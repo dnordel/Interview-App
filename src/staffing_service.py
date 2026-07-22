@@ -818,6 +818,7 @@ class StaffingService:
                 if len(digits) != 10:
                     raise ValueError("Candidate phone must contain 10 U.S. digits.")
                 phone = f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
+        completed_at = self.clock()
         result = self.store.record_director_interview(
             int(referral_id),
             director_name=director_name,
@@ -833,7 +834,8 @@ class StaffingService:
             candidate_phone=phone,
             follow_up_needed=follow_up_needed,
             owner_approval_status="pending_owner_approval",
-            now=self.clock(),
+            reserve_offer_pending=clean_decision == "hire" and bool(classroom),
+            now=completed_at,
         )
         self._publish_change(
             "record_director_interview",
@@ -861,6 +863,74 @@ class StaffingService:
             },
         )
         return result
+
+    def accept_pending_offer(self, history_id: str, *, start_date: str) -> StaffingTransitionResult:
+        clean_history_id = str(history_id or "").strip()
+        if not clean_history_id:
+            raise ValueError("History ID is required.")
+        clean_start_date = _valid_date(start_date, "Start date")
+        now = self.clock()
+        if date.fromisoformat(clean_start_date) < _parse_timestamp(now).date():
+            raise ValueError("Start date cannot be in the past.")
+        with self.store.write_connection("accept_pending_offer") as conn:
+            row = conn.execute(
+                "SELECT id FROM assignments WHERE offer_history_id = ? AND active = 1",
+                (clean_history_id,),
+            ).fetchone()
+            if row is None:
+                raise ValueError("Offer Pending staffing assignment was not found.")
+            assignment = self.store.assignment_context(conn, int(row["id"]))
+            person_id = assignment.person_id
+            if assignment.status == "need_now" and person_id is None:
+                candidate = conn.execute(
+                    "SELECT candidate_name FROM director_candidate_referrals WHERE history_id = ?",
+                    (clean_history_id,),
+                ).fetchone()
+                if candidate is None:
+                    raise ValueError("Candidate staffing record was not found.")
+                person_id = self.store.ensure_person(
+                    conn, str(candidate["candidate_name"]), "Teacher", "unknown", now
+                )
+            elif assignment.status != "offer_pending" or person_id is None:
+                raise ValueError("Staffing assignment is not Offer Pending.")
+            conn.execute(
+                """
+                UPDATE assignments
+                SET status = 'coming', person_id = ?, start_date = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (person_id, clean_start_date, now, assignment.id),
+            )
+            updated = self.store.assignment_context(conn, assignment.id)
+        self._emit_assignment_event("mark_coming", updated)
+        return _result(updated)
+
+    def decline_pending_offer(self, history_id: str) -> StaffingTransitionResult:
+        clean_history_id = str(history_id or "").strip()
+        if not clean_history_id:
+            raise ValueError("History ID is required.")
+        now = self.clock()
+        with self.store.write_connection("decline_pending_offer") as conn:
+            row = conn.execute(
+                "SELECT id FROM assignments WHERE offer_history_id = ? AND active = 1",
+                (clean_history_id,),
+            ).fetchone()
+            if row is None:
+                raise ValueError("Offer Pending staffing assignment was not found.")
+            assignment = self.store.assignment_context(conn, int(row["id"]))
+            if assignment.status != "offer_pending":
+                raise ValueError("Staffing assignment is not Offer Pending.")
+            conn.execute(
+                """
+                UPDATE assignments
+                SET status = 'need_now', person_id = NULL, start_date = NULL, updated_at = ?
+                WHERE id = ?
+                """,
+                (now, assignment.id),
+            )
+            updated = self.store.assignment_context(conn, assignment.id)
+        self._emit_assignment_event("open_position", updated)
+        return _result(updated)
 
     def reopen_director_interview(
         self,

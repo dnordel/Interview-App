@@ -2,8 +2,8 @@ module:
   name: hiring_pipeline
   language: python
   path: src/hiring_pipeline.py
-  version: 1.14.0
-  description: Candidate-profile, application-pipeline, event-audit, calculated teacher starting pay, existing-candidate external offer cycles, editable increment-enforced pending-offer approval, delayed candidate-email delivery, offer-only deletion, and PDF-only offer lifecycle persistence.
+  version: 1.15.0
+  description: Candidate-profile, application-pipeline, event-audit, calculated teacher starting pay, existing-candidate external offer cycles, editable increment-enforced pending-offer approval, reversible accepted/not-accepted admin decisions with staffing callbacks, delayed candidate-email delivery, offer-only deletion, and PDF-only offer lifecycle persistence.
 functions:
 - name: build_offer_notification_payload
   description: Build shared offer-approved notification values used by both approval preview and candidate delivery, including canonical school code and location.
@@ -658,7 +658,15 @@ classes:
       actor: {type: str, required: true}
     returns: {type: HiringApplication}
     exceptions: [ValueError]
-    side_effects: Accepts only the latest sent version, preserves accepted state before notification, and marks blocked acceptance email retryable.
+    side_effects: Accepts only the latest sent or reversibly not-accepted version, invokes the fail-closed staffing Coming callback before persistence, preserves accepted state before onboarding/notification work, and marks blocked acceptance email retryable.
+  - name: mark_offer_not_accepted
+    inputs:
+      application_id: {type: str, required: true}
+      version_id: {type: str, required: true}
+      actor: {type: str, required: true}
+    returns: {type: HiringApplication}
+    exceptions: [ValueError]
+    side_effects: Marks only the latest Sent offer Not Accepted after the staffing Need Now callback succeeds, keeps the application active at Offer Sent for reversal, and appends an immutable offer_not_accepted audit event.
   - name: retry_accepted_notification
     inputs:
       application_id: {type: str, required: true}

@@ -674,6 +674,15 @@ QFrame#StaffingV2ComingChip {
     padding: 4px 10px;
     font-weight: 700;
 }
+QLabel#StaffingV2OfferPendingChip,
+QFrame#StaffingV2OfferPendingChip {
+    background-color: #fff7d6;
+    color: #a16207;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 4px 10px;
+    font-weight: 700;
+}
 QLabel#StaffingV2FilledChip,
 QLabel#StaffingV2HealthyChip,
 QFrame#StaffingV2FilledChip,
@@ -1018,6 +1027,9 @@ QWidget#PySideStaffingV2Page QFrame#StaffingV2ClassroomListItem[staffingV2Status
 }
 QWidget#PySideStaffingV2Page QFrame#StaffingV2ClassroomListItem[staffingV2StatusFill="coming"] {
     background-color: #fef3c7;
+}
+QWidget#PySideStaffingV2Page QFrame#StaffingV2ClassroomListItem[staffingV2StatusFill="offer_pending"] {
+    background-color: #fff7d6;
 }
 QWidget#PySideStaffingV2Page QFrame#StaffingV2ClassroomListItem[staffingV2StatusFill="filled"] {
     background-color: #dcfce7;
@@ -2524,7 +2536,7 @@ class StaffingDashboardV2Page:
             )
         self._sync_combo(
             self.classrooms_status_filter,
-            ["All Statuses", "Need Now", "Replace", "Coming", "Filled", "Don't Need"],
+            ["All Statuses", "Need Now", "Replace", "Offer Pending", "Coming", "Filled", "Don't Need"],
         )
         self._refresh_classrooms_filters()
 
@@ -2693,7 +2705,7 @@ class StaffingDashboardV2Page:
         if state.get("need_now", True):
             allowed.update({"Need Now", "Replace"})
         if state.get("coming", True):
-            allowed.add("Coming")
+            allowed.update({"Offer Pending", "Coming"})
         if state.get("filled", True):
             allowed.add("Filled")
         if state.get("dont_need", True):
@@ -4714,7 +4726,7 @@ class StaffingDashboardV2Page:
 
         self.people_active_filter = self._people_filter_combo("StaffingV2PeopleActiveFilter", ["All", "Active", "Inactive"])
         filters.addLayout(self._labeled_control("Active Status", self.people_active_filter), 1)
-        self.people_role_filter = self._people_filter_combo("StaffingV2PeopleRoleFilter", ["All", "Director", "Teacher", "Aide"])
+        self.people_role_filter = self._people_filter_combo("StaffingV2PeopleRoleFilter", ["All", "Director", "Teacher"])
         filters.addLayout(self._labeled_control("Role", self.people_role_filter), 1)
         self.people_permit_filter = self._people_filter_combo("StaffingV2PeoplePermitFilter", ["All", "Teacher Permit", "Permit in Process", "Unknown"])
         filters.addLayout(self._labeled_control("Permit Status", self.people_permit_filter), 1)
@@ -4819,7 +4831,7 @@ class StaffingDashboardV2Page:
 
         self.people_filter_active = self._people_drawer_combo("StaffingV2PeopleFilterActive", ["All", "Active", "Inactive"])
         self.people_filter_drawer_layout.addLayout(self._labeled_control("Active Status", self.people_filter_active))
-        self.people_filter_role = self._people_drawer_combo("StaffingV2PeopleFilterRole", ["All", "Teacher", "Aide"])
+        self.people_filter_role = self._people_drawer_combo("StaffingV2PeopleFilterRole", ["All", "Teacher"])
         self.people_filter_drawer_layout.addLayout(self._labeled_control("Role", self.people_filter_role))
         self.people_filter_permit = self._people_drawer_combo(
             "StaffingV2PeopleFilterPermit",
@@ -4901,7 +4913,7 @@ class StaffingDashboardV2Page:
         form_layout.addLayout(self._labeled_control("Full Name", name))
         role = self.QtWidgets.QComboBox()
         role.setObjectName("StaffingV2AddPersonRole")
-        role.addItems(["Director", "Teacher", "Aide"])
+        role.addItems(["Director", "Teacher"])
         form_layout.addLayout(self._labeled_control("Role", role))
         permit = self.QtWidgets.QComboBox()
         permit.setObjectName("StaffingV2AddPersonPermit")
@@ -5158,7 +5170,6 @@ class StaffingDashboardV2Page:
                 widget.deleteLater()
         active = sum(1 for person in self.people if person.active)
         teachers = sum(1 for person in self.people if person.role == "Teacher")
-        aides = sum(1 for person in self.people if person.role == "Aide")
         units = [person.units for person in self.people if person.units is not None]
         avg_units = sum(units) / len(units) if units else 0.0
         cards = [
@@ -5166,7 +5177,6 @@ class StaffingDashboardV2Page:
             ("Active", str(active)),
             ("Inactive", str(len(self.people) - active)),
             ("Teachers", str(teachers)),
-            ("Aides", str(aides)),
             ("Avg Units", f"{avg_units:.1f}"),
         ]
         for label, value in cards:
@@ -5365,7 +5375,7 @@ class StaffingDashboardV2Page:
         form_layout.addLayout(self._labeled_control("Full Name", name))
         role = self.QtWidgets.QComboBox()
         role.setObjectName("StaffingV2EditPersonRole")
-        role.addItems(["Director", "Teacher", "Aide"])
+        role.addItems(["Director", "Teacher"])
         if role.findText(person.role) < 0:
             role.addItem(person.role)
         role.setCurrentText(person.role)
@@ -6033,7 +6043,7 @@ class StaffingDashboardV2Page:
 
         status = self.QtWidgets.QComboBox()
         status.setObjectName("StaffingV2DashboardClassroomStatusFilter")
-        status.addItems(["All Statuses", "Need Now", "Replace", "Coming", "Filled", "Don't Need"])
+        status.addItems(["All Statuses", "Need Now", "Replace", "Offer Pending", "Coming", "Filled", "Don't Need"])
         status.setCurrentText(str(self.dashboard_classroom_filter_state.get("status", "All Statuses")))
         permit_issue_only = self.QtWidgets.QCheckBox("Only classrooms with permit issues")
         permit_issue_only.setObjectName("StaffingV2DashboardPermitIssueFilter")
@@ -6131,6 +6141,7 @@ class StaffingDashboardV2Page:
         status_map = {
             "Need Now": "need_now",
             "Replace": "replace",
+            "Offer Pending": "offer_pending",
             "Coming": "coming",
             "Filled": "filled",
             "Don't Need": "dont_need_now",
@@ -6476,9 +6487,30 @@ class StaffingDashboardV2Page:
         shift_end.setObjectName("StaffingV2DirectorInterviewShiftEndText")
         classroom = self.QtWidgets.QComboBox()
         classroom.setObjectName("StaffingV2DirectorInterviewClassroom")
-        classroom.setEditable(True)
+        classroom.setEditable(False)
         classroom_names = director_interview_classroom_options(self.rows, candidate.school)
-        classroom.addItems(classroom_names or [""])
+        available_classrooms = {
+            row.classroom
+            for row in self.rows
+            if row.school.casefold() == candidate.school.casefold()
+            and row.status == "need_now"
+        }
+        for classroom_name in classroom_names:
+            classroom.addItem(classroom_name)
+            item = classroom.model().item(classroom.count() - 1)
+            if classroom_name in available_classrooms:
+                item.setBackground(self.QtGui.QColor("#fee2e2"))
+                item.setForeground(self.QtGui.QColor("#dc2626"))
+                item.setToolTip("Need Now position available")
+            else:
+                item.setEnabled(False)
+                item.setForeground(self.QtGui.QColor("#64748b"))
+                item.setToolTip("No Need Now position available")
+        first_available = next(
+            (index for index in range(classroom.count()) if classroom.model().item(index).isEnabled()),
+            -1,
+        )
+        classroom.setCurrentIndex(first_available)
         offer_position = self.QtWidgets.QComboBox()
         offer_position.setObjectName("StaffingV2DirectorInterviewOfferPosition")
         offer_position.addItem("Select proposed position", None)
@@ -6552,7 +6584,7 @@ class StaffingDashboardV2Page:
             if classroom_field_row is not None:
                 classroom_field_row.setVisible(is_hire and is_teacher_position)
             if not is_teacher_position:
-                classroom.setCurrentText("")
+                classroom.setCurrentIndex(-1)
 
         decision.currentTextChanged.connect(sync_hire_only_fields)
         offer_position.currentIndexChanged.connect(sync_hire_only_fields)
@@ -6560,7 +6592,7 @@ class StaffingDashboardV2Page:
 
         info, info_layout = self._dialog_section("StaffingV2DialogInfo")
         info_layout.addWidget(self._label("Hire decisions store proposed classroom, shift, and offer position."))
-        info_layout.addWidget(self._label("Position status and classroom assignment stay unchanged until offer approval/acceptance."))
+        info_layout.addWidget(self._label("Teacher hires reserve the first Need Now classroom position as Offer Pending."))
         scroll_layout.addWidget(info)
 
         error = self._label("", "StaffingV2NeedNowChip")
@@ -7022,7 +7054,7 @@ class StaffingDashboardV2Page:
         position_name.setObjectName("StaffingV2EditPositionName")
         position_type = self.QtWidgets.QComboBox()
         position_type.setObjectName("StaffingV2EditPositionType")
-        type_values = [assignment.position_type, "Director", "Teacher", "Aide", "Floater", "Chef", "Other"]
+        type_values = [assignment.position_type, "Director", "Teacher", "Floater", "Chef", "Other"]
         position_type.addItems([value for index, value in enumerate(type_values) if value and value not in type_values[:index]])
         position_type.setEditable(True)
         position_type.setCurrentText(assignment.position_type)
@@ -7178,7 +7210,7 @@ class StaffingDashboardV2Page:
         classroom.setObjectName("StaffingV2AddPositionClassroom")
         position_type = self.QtWidgets.QComboBox()
         position_type.setObjectName("StaffingV2AddPositionType")
-        position_type.addItems(["Director", "Teacher", "Aide", "Floater", "Chef", "Other"])
+        position_type.addItems(["Director", "Teacher", "Floater", "Chef", "Other"])
         position_name = self.QtWidgets.QLineEdit()
         position_name.setObjectName("StaffingV2AddPositionName")
         position_name.setPlaceholderText("Teacher 2")
@@ -7439,8 +7471,8 @@ class StaffingDashboardV2Page:
         full_name.setText(assignment.person_name or "Emily Carter")
         role = self.QtWidgets.QComboBox()
         role.setObjectName("StaffingV2ComingRole")
-        role.addItems(["Director", "Teacher", "Aide", "Floater", "Chef"])
-        supported_roles = {"Director", "Teacher", "Aide", "Floater", "Chef"}
+        role.addItems(["Director", "Teacher", "Floater", "Chef"])
+        supported_roles = {"Director", "Teacher", "Floater", "Chef"}
         role.setCurrentText(assignment.position_type if assignment.position_type in supported_roles else "Teacher")
         start_date = self.QtWidgets.QDateEdit()
         start_date.setObjectName("StaffingV2ComingStartDate")
@@ -8531,7 +8563,7 @@ class StaffingDashboardV2Page:
         frame, layout = self._panel("StaffingV2StatusKey")
         row = self.QtWidgets.QHBoxLayout()
         row.addWidget(self._label("Status Key", "StaffingV2Muted"))
-        for status in ("need_now", "replace", "coming", "filled", "dont_need_now"):
+        for status in ("need_now", "replace", "offer_pending", "coming", "filled", "dont_need_now"):
             row.addWidget(self._chip(_display_status(status), status))
         row.addStretch(1)
         layout.addLayout(row)
@@ -8630,10 +8662,14 @@ def _classroom_label(classroom: str, rows: list[StaffingMetricRow]) -> str:
 def _classroom_counts_text(rows: list[StaffingMetricRow]) -> str:
     need = sum(1 for row in rows if row.status == "need_now")
     replace = sum(1 for row in rows if row.status == "replace")
+    offer_pending = sum(1 for row in rows if row.status == "offer_pending")
     coming = sum(1 for row in rows if row.status == "coming")
     filled = sum(1 for row in rows if row.status == "filled")
     dont_need = sum(1 for row in rows if row.status == "dont_need_now")
-    return f"Need {need} · Replace {replace}\nComing {coming} · Filled {filled}\nDon't Need {dont_need}"
+    return (
+        f"Need {need} · Replace {replace}\nOffer Pending {offer_pending} · Coming {coming}\n"
+        f"Filled {filled} · Don't Need {dont_need}"
+    )
 
 
 def _classroom_status_key(rows: list[StaffingMetricRow]) -> str:
@@ -8642,6 +8678,8 @@ def _classroom_status_key(rows: list[StaffingMetricRow]) -> str:
         return "need_now"
     if "replace" in statuses:
         return "replace"
+    if "offer_pending" in statuses:
+        return "offer_pending"
     if "coming" in statuses:
         return "coming"
     if "filled" in statuses:
@@ -8762,6 +8800,8 @@ def _classroom_priority_status(rows: list[StaffingMetricRow]) -> str:
         return "Need Now"
     if "replace" in statuses:
         return "Replace"
+    if "offer_pending" in statuses:
+        return "Offer Pending"
     if "coming" in statuses:
         return "Coming"
     if statuses and statuses <= {"filled"}:
@@ -8845,6 +8885,7 @@ def _display_status(status: str) -> str:
     return {
         "need_now": "Need Now",
         "replace": "Replace",
+        "offer_pending": "Offer Pending",
         "coming": "Coming",
         "filled": "Filled",
         "dont_need_now": "Don't Need",
@@ -8858,6 +8899,7 @@ def _status_from_label(label: str) -> str:
         "Coming": "coming",
         "Filled": "filled",
         "Replace": "replace",
+        "Offer Pending": "offer_pending",
     }.get(str(label or "").strip(), "dont_need_now")
 
 
@@ -9138,6 +9180,7 @@ def _status_icon_key(status: str) -> str:
     return {
         "need_now": "status_need",
         "replace": "status_replace",
+        "offer_pending": "status_pending",
         "coming": "status_pending",
         "filled": "status_filled",
         "healthy": "status_filled",
@@ -9190,6 +9233,7 @@ def _primary_action(status: str) -> tuple[str, str]:
     return {
         "dont_need_now": ("open_position", "Mark Need Now"),
         "need_now": ("mark_coming", "Mark Coming"),
+        "offer_pending": ("view_details", "View"),
         "coming": ("mark_filled", "Mark Filled"),
         "filled": ("manage_filled", "Manage Filled"),
         "replace": ("clear_replacement", "Mark Need Now"),
@@ -9204,6 +9248,7 @@ def _action_menu_specs(status: str) -> list[tuple[str, str]]:
             ("Delete Position", "delete_position"),
             ("View Details", "view_details"),
         ],
+        "offer_pending": [("View Details", "view_details")],
         "coming": [
             ("Mark Filled", "mark_filled"),
             ("Revert Coming", "revert_coming"),
@@ -9234,6 +9279,7 @@ def _chip_object_name(status: str) -> str:
     return {
         "need_now": "StaffingV2NeedNowChip",
         "replace": "StaffingV2ReplaceChip",
+        "offer_pending": "StaffingV2OfferPendingChip",
         "coming": "StaffingV2ComingChip",
         "filled": "StaffingV2FilledChip",
         "healthy": "StaffingV2HealthyChip",

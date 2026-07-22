@@ -2,8 +2,8 @@ module:
   name: hiring_workspace_v2
   language: python
   path: src/hiring_workspace_v2.py
-  version: 3.9.1
-  description: Native Staffing v2 Candidates pipeline/history and Offers surfaces with shared candidate capture, searchable existing-candidate reuse that preserves review facts, qualification-driven teacher offer creation, automatic school paths and shift-derived schedule terms, compact three-column approval facts, and versioned approval lifecycle actions.
+  version: 3.10.0
+  description: Native Staffing v2 Candidates pipeline/history and Offers surfaces with shared candidate capture, searchable existing-candidate reuse that preserves review facts, qualification-driven teacher offer creation, automatic school paths and shift-derived schedule terms, compact approval facts, and admin-only reversible Accepted/Not Accepted lifecycle actions.
 functions: []
 classes:
 - name: HiringOfferApprovalDialog
@@ -107,7 +107,7 @@ classes:
       values: {type: 'dict[str, Any] | None', required: false, default: null}
     returns: {type: Any}
     exceptions: [ValueError]
-    side_effects: Runs calculated teacher-offer creation, external-create, retry, increment-enforced revision, extension, acceptance, or archive workflow action and refreshes workspace.
+    side_effects: Runs calculated teacher-offer creation, external-create, retry, increment-enforced revision, extension, reversible accepted/not-accepted admin decision, or archive workflow action and refreshes workspace including Not Accepted rows/counts.
   - name: _open_external_offer_dialog
     inputs: {}
     returns: {type: None}

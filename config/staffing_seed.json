@@ -436,9 +436,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 1",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
               "display_order": 2,
               "status": "filled",
               "person": {
@@ -458,9 +458,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 2",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
               "display_order": 4,
               "status": "filled",
               "person": {
@@ -480,9 +480,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 3",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 3",
+              "position_type": "Teacher",
               "display_order": 6,
               "status": "dont_need_now",
               "notes": "?"
@@ -508,9 +508,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 1",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
               "display_order": 2,
               "status": "filled",
               "person": {
@@ -530,9 +530,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 2",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
               "display_order": 4,
               "status": "filled",
               "person": {
@@ -549,9 +549,9 @@
               "notes": "?"
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 3",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 3",
+              "position_type": "Teacher",
               "display_order": 6,
               "status": "dont_need_now",
               "notes": "?"
@@ -577,9 +577,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 1",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
               "display_order": 2,
               "status": "filled",
               "person": {
@@ -599,9 +599,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 2",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
               "display_order": 4,
               "status": "filled",
               "person": {
@@ -621,9 +621,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 3",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 3",
+              "position_type": "Teacher",
               "display_order": 6,
               "status": "dont_need_now",
               "notes": "?"
@@ -649,9 +649,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 1",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
               "display_order": 2,
               "status": "filled",
               "person": {
@@ -671,9 +671,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 2",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
               "display_order": 4,
               "status": "dont_need_now",
               "notes": "?"
@@ -699,9 +699,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 1",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
               "display_order": 2,
               "status": "filled",
               "person": {
@@ -721,9 +721,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 2",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
               "display_order": 4,
               "status": "dont_need_now",
               "notes": "?"
@@ -838,9 +838,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 1",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
               "display_order": 2,
               "status": "need_now",
               "notes": "?"
@@ -857,9 +857,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 2",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
               "display_order": 4,
               "status": "dont_need_now",
               "notes": "?"
@@ -876,9 +876,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 3",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 3",
+              "position_type": "Teacher",
               "display_order": 6,
               "status": "dont_need_now",
               "notes": "?"
@@ -904,9 +904,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 1",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
               "display_order": 2,
               "status": "coming",
               "person": {
@@ -926,9 +926,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 2",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
               "display_order": 4,
               "status": "need_now",
               "notes": "?"
@@ -945,9 +945,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 3",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 3",
+              "position_type": "Teacher",
               "display_order": 6,
               "status": "dont_need_now",
               "notes": "?"
@@ -973,9 +973,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 1",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
               "display_order": 2,
               "status": "need_now",
               "notes": "?"
@@ -992,9 +992,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 2",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 2",
+              "position_type": "Teacher",
               "display_order": 4,
               "status": "need_now",
               "notes": "?"
@@ -1008,9 +1008,9 @@
               "notes": "?"
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 3",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 3",
+              "position_type": "Teacher",
               "display_order": 6,
               "status": "dont_need_now",
               "notes": "?"
@@ -1036,9 +1036,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 1",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
               "display_order": 2,
               "status": "need_now",
               "notes": "?"
@@ -1075,9 +1075,9 @@
               }
             },
             {
-              "slot_group": "aide",
-              "position_name": "Aide 1",
-              "position_type": "Aide",
+              "slot_group": "teacher",
+              "position_name": "Teacher 1",
+              "position_type": "Teacher",
               "display_order": 2,
               "status": "need_now",
               "notes": "?"

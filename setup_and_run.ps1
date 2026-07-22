@@ -45,29 +45,6 @@ function Write-Log([string]$msg) {
   $msg | Out-File -FilePath $Log -Append -Encoding UTF8
 }
 
-function Install-StaffingDesktopShortcut {
-  try {
-    $launcherPath = Join-Path $AppDir "..START PROGRAM.vbs"
-    $iconPath = Join-Path $AppDir "assets\staffing_app.ico"
-    if (-not (Test-Path $launcherPath) -or -not (Test-Path $iconPath)) {
-      Write-Log "Skipping desktop shortcut; launcher or icon is missing."
-      return
-    }
-    $shell = New-Object -ComObject WScript.Shell
-    $shortcutPath = Join-Path ([Environment]::GetFolderPath("Desktop")) "Staffing App.lnk"
-    $shortcut = $shell.CreateShortcut($shortcutPath)
-    $shortcut.TargetPath = $launcherPath
-    $shortcut.WorkingDirectory = $AppDir
-    $shortcut.Description = "Launch Staffing App"
-    $shortcut.IconLocation = "$iconPath,0"
-    $shortcut.Save()
-    Write-Log "Installed desktop shortcut: $shortcutPath"
-  }
-  catch {
-    Write-Log "Desktop shortcut install skipped: $($_.Exception.Message)"
-  }
-}
-
 # Force modern TLS for python.org downloads on older boxes
 try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch {}
 
@@ -1552,7 +1529,6 @@ if ($null -ne $fastContext) {
       Names = @()
     })
     Add-CudaRuntimePaths -VenvPy $fastContext.VenvPy -GpuVendor $vendor
-    Install-StaffingDesktopShortcut
     [void](Start-InterviewApplication -VenvPy $fastContext.VenvPy -AppPath $fastContext.AppPath)
     Write-Log "Fast launch complete."
   }
@@ -1663,7 +1639,6 @@ $form.Add_Shown({
     $app = Find-AppFile -Cfg $cfg
     if (-not $app) { throw "Could not find the app .pyw file in: $AppDir" }
 
-    Install-StaffingDesktopShortcut
     Set-Progress 95 "Launching interview tool..."
     [void](Start-InterviewApplication -VenvPy $venvPy -AppPath $app)
 

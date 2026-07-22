@@ -5,6 +5,7 @@ from dataclasses import asdict, replace
 from datetime import datetime, timezone
 import json
 import os
+import re
 import sqlite3
 from pathlib import Path
 from typing import Any, Sequence
@@ -113,6 +114,7 @@ class StaffingStore:
                     slot_group TEXT NOT NULL DEFAULT '',
                     notes TEXT NOT NULL DEFAULT '',
                     display_order INTEGER NOT NULL DEFAULT 0,
+                    offer_history_id TEXT NOT NULL DEFAULT '',
                     active INTEGER NOT NULL DEFAULT 1,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
@@ -236,6 +238,56 @@ class StaffingStore:
             self._ensure_column(conn, "assignments", "notes", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "assignments", "shift_start", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "assignments", "shift_end", "TEXT NOT NULL DEFAULT ''")
+            self._ensure_column(conn, "assignments", "offer_history_id", "TEXT NOT NULL DEFAULT ''")
+            aide_rows = conn.execute(
+                """
+                SELECT id, classroom_id, position_name, slot_group
+                FROM assignments
+                WHERE active = 1 AND position_type = 'Aide'
+                ORDER BY classroom_id, display_order, id
+                """
+            ).fetchall()
+            teacher_names_by_classroom: dict[int, set[str]] = {}
+            for row in conn.execute(
+                """
+                SELECT classroom_id, position_name
+                FROM assignments
+                WHERE active = 1 AND position_type = 'Teacher'
+                """
+            ).fetchall():
+                teacher_names_by_classroom.setdefault(int(row["classroom_id"]), set()).add(
+                    str(row["position_name"]).casefold()
+                )
+            for row in aide_rows:
+                classroom_id = int(row["classroom_id"])
+                used_names = teacher_names_by_classroom.setdefault(classroom_id, set())
+                position_name = re.sub(
+                    r"\bAide\b", "Teacher", str(row["position_name"]), flags=re.IGNORECASE
+                )
+                if position_name.casefold() in used_names:
+                    suffix = 1
+                    while f"teacher {suffix}" in used_names:
+                        suffix += 1
+                    position_name = f"Teacher {suffix}"
+                used_names.add(position_name.casefold())
+                slot_group = str(row["slot_group"] or "")
+                if slot_group.casefold() in {"", "aide"}:
+                    slot_group = "teacher"
+                conn.execute(
+                    """
+                    UPDATE assignments
+                    SET position_name = ?, position_type = 'Teacher', slot_group = ?
+                    WHERE id = ?
+                    """,
+                    (position_name, slot_group, int(row["id"])),
+                )
+            has_active_aide_people = conn.execute(
+                "SELECT 1 FROM people WHERE active = 1 AND role = 'Aide' LIMIT 1"
+            ).fetchone()
+            if has_active_aide_people is not None:
+                conn.execute(
+                    "UPDATE people SET role = 'Teacher' WHERE active = 1 AND role = 'Aide'"
+                )
             self._ensure_column(conn, "director_candidate_referrals", "candidate_email", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "director_candidate_referrals", "candidate_phone", "TEXT NOT NULL DEFAULT ''")
             self._ensure_column(conn, "director_candidate_referrals", "referral_date", "TEXT NOT NULL DEFAULT ''")
@@ -981,6 +1033,7 @@ class StaffingStore:
         candidate_phone: str = "",
         follow_up_needed: bool = False,
         owner_approval_status: str = "pending_owner_approval",
+        reserve_offer_pending: bool = False,
         now: str,
     ) -> StaffingDirectorInterview:
         with self.write_connection("director_interview") as conn:
@@ -990,6 +1043,36 @@ class StaffingStore:
                     (candidate_email, candidate_phone, now, int(referral_id)),
                 )
             candidate = self.director_candidate_context(conn, int(referral_id))
+            if reserve_offer_pending:
+                linked_assignment = conn.execute(
+                    "SELECT id FROM assignments WHERE active = 1 AND offer_history_id = ? LIMIT 1",
+                    (candidate.history_id,),
+                ).fetchone()
+                assignment_row = linked_assignment or conn.execute(
+                    """
+                    SELECT a.id
+                    FROM assignments a
+                    JOIN classrooms c ON c.id = a.classroom_id
+                    JOIN schools s ON s.id = c.school_id
+                    WHERE a.active = 1 AND s.name = ? AND c.name = ? AND a.status = 'need_now'
+                    ORDER BY a.display_order, a.id
+                    LIMIT 1
+                    """,
+                    (candidate.school, proposed_classroom),
+                ).fetchone()
+                if assignment_row is None:
+                    raise ValueError("Selected classroom has no Need Now position available.")
+                if linked_assignment is None:
+                    person_id = self.ensure_person(conn, candidate.candidate_name, "Teacher", "unknown", now)
+                    conn.execute(
+                        """
+                        UPDATE assignments
+                        SET status = 'offer_pending', person_id = ?, position_type = 'Teacher',
+                            offer_history_id = ?, start_date = NULL, updated_at = ?
+                        WHERE id = ? AND status = 'need_now'
+                        """,
+                        (person_id, candidate.history_id, now, int(assignment_row["id"])),
+                    )
             existing = conn.execute(
                 "SELECT id, version_number FROM director_interviews WHERE referral_id = ?",
                 (int(referral_id),),
@@ -1555,6 +1638,7 @@ class StaffingStore:
             slot_group=str(row["slot_group"] or ""),
             notes=str(row["notes"] or ""),
             display_order=int(row["display_order"] or 0),
+            offer_history_id=str(row["offer_history_id"] or ""),
         )
 
     def person_context(self, conn: sqlite3.Connection, person_id: int) -> StaffingPerson:
@@ -1870,7 +1954,9 @@ def _seed_schools(data: Any) -> list[dict[str, Any]]:
             positions_raw = classroom_raw.get("slots", classroom_raw.get("positions", []))
             if not isinstance(positions_raw, list):
                 raise ValueError("Positions must be a list.")
-            positions = [_seed_position(position) for position in positions_raw]
+            positions = _renumber_teacher_seed_positions(
+                [_seed_position(position) for position in positions_raw]
+            )
             capacity = classroom_raw.get("licensed_capacity")
             if capacity is not None:
                 capacity = int(capacity)
@@ -1925,12 +2011,20 @@ def _seed_position(position_raw: Any, *, default_slot_group: str = "") -> dict[s
     permit_status = str(person_raw.get("permit_status", "unknown") or "unknown").strip()
     if permit_status not in PERMIT_STATUSES:
         raise ValueError("Unknown permit status.")
+    position_name = _required_text(str(position_raw.get("position_name", "")), "Position name")
+    position_type = _required_text(str(position_raw.get("position_type", "")), "Position type")
+    slot_group = str(position_raw.get("slot_group", default_slot_group) or default_slot_group).strip()
+    if position_type.casefold() == "aide":
+        position_type = "Teacher"
+        position_name = re.sub(r"\bAide\b", "Teacher", position_name, flags=re.IGNORECASE)
+        if slot_group.casefold() in {"", "aide"}:
+            slot_group = "teacher"
     return {
-        "position_name": _required_text(str(position_raw.get("position_name", "")), "Position name"),
-        "position_type": _required_text(str(position_raw.get("position_type", "")), "Position type"),
+        "position_name": position_name,
+        "position_type": position_type,
         "status": status,
         "start_date": str(position_raw.get("start_date", "") or "").strip(),
-        "slot_group": str(position_raw.get("slot_group", default_slot_group) or default_slot_group).strip(),
+        "slot_group": slot_group,
         "notes": str(position_raw.get("notes", "") or "").strip(),
         "display_order": int(position_raw.get("display_order", 0) or 0),
         "person": {
@@ -1938,3 +2032,20 @@ def _seed_position(position_raw: Any, *, default_slot_group: str = "") -> dict[s
             "permit_status": permit_status,
         },
     }
+
+
+def _renumber_teacher_seed_positions(positions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    used_names: set[str] = set()
+    for position in positions:
+        if position["position_type"].casefold() != "teacher":
+            continue
+        name_key = position["position_name"].casefold()
+        if name_key not in used_names:
+            used_names.add(name_key)
+            continue
+        suffix = 1
+        while f"teacher {suffix}" in used_names:
+            suffix += 1
+        position["position_name"] = f"Teacher {suffix}"
+        used_names.add(position["position_name"].casefold())
+    return positions

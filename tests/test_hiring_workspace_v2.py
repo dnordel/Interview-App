@@ -1274,6 +1274,23 @@ def test_hiring_workspace_contextual_actions_complete_offer_lifecycle(tmp_path: 
         values={"reply_by_date": "2026-07-25"},
     )
     assert extended.operational_reply_by_date == "2026-07-25"
+    declined = page.perform_action(
+        "not_accept_offer", service.store.get_application(application.application_id)
+    )
+    assert declined.stage is HiringStage.OFFER_SENT
+    assert "Not Accepted 1" in page.offers_status.text()
+    not_accepted_rows = [
+        row
+        for row in range(page.approved_offers_table.rowCount())
+        if page.approved_offers_table.item(row, 5).text() == "Not Accepted"
+    ]
+    assert len(not_accepted_rows) == 1
+    menu = page.approved_offers_table.cellWidget(not_accepted_rows[0], 6).findChild(
+        QtWidgets.QToolButton, "HiringV2OfferOverflowAction"
+    ).menu()
+    assert [action.text() for action in menu.actions() if action.text()] == [
+        "Mark accepted", "Delete offer", "Archive application"
+    ]
     accepted = page.perform_action("accept_offer", service.store.get_application(application.application_id))
     assert accepted.stage is HiringStage.ACCEPTED
     archived = page.perform_action("archive", accepted)

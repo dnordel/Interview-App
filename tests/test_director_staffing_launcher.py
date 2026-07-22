@@ -97,15 +97,12 @@ def test_director_vbs_restores_existing_dashboard_before_exiting() -> None:
     assert body.index('shell.SendKeys "% x"') < body.index("WScript.Quit 0")
 
 
-def test_director_setup_creates_school_specific_portable_desktop_shortcut() -> None:
+def test_director_setup_does_not_create_desktop_shortcuts() -> None:
     setup_text = Path("setup_director_staffing.ps1").read_text(encoding="utf-8")
 
-    assert "function Install-DirectorStaffingDesktopShortcut" in setup_text
-    assert 'Join-Path $AppDir "assets\\staffing_app.ico"' in setup_text
-    assert '"Director Staffing - $safeSchool.lnk"' in setup_text
-    assert '$shortcut.TargetPath = $launcherPath' in setup_text
-    assert '$shortcut.IconLocation = "$iconPath,0"' in setup_text
-    assert "Install-DirectorStaffingDesktopShortcut -School $DirectorSchool" in setup_text
+    assert "CreateShortcut" not in setup_text
+    assert "Install-DirectorStaffingDesktopShortcut" not in setup_text
+    assert '"Director Staffing - $safeSchool.lnk"' not in setup_text
 
 
 def test_director_entrypoint_uses_staffing_only_modules_and_requirements() -> None:

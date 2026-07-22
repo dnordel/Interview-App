@@ -2,8 +2,8 @@ module:
   name: staffing_models
   language: python
   path: src/staffing_models.py
-  version: 0.17.0
-  description: Dataclasses, enum constants, and school-scoped director-interview position/classroom option derivation for local staffing dashboard transactions, classroom records, employee/person permit metadata including managed document paths, current assignment display data, assignment history dashboard records, metrics, workbook-style display metadata, and director interview referral/completion tracking.
+  version: 0.18.0
+  description: Dataclasses, enum constants including Offer Pending staffing assignments, and school-scoped director-interview position/classroom option derivation for local staffing dashboard transactions, classroom records, employee/person permit metadata including managed document paths, current assignment display data, assignment history dashboard records, metrics, workbook-style display metadata, and director interview referral/completion tracking.
 functions:
 - name: director_interview_position_options
   locked: false
@@ -61,6 +61,7 @@ data_structures:
   - slot_group
   - notes
   - display_order
+  - offer_history_id
 - name: StaffingPerson
   type: dataclass
   fields:

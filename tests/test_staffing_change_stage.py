@@ -15,6 +15,16 @@ def _merge_dropbox_artifacts(source: Path, target: Path) -> None:
         shutil.copy2(artifact, destination)
 
 
+def _seed_offer_slot(store: StaffingStore) -> int:
+    return store.seed_assignment(
+        school="Palmdale",
+        classroom="Harmony",
+        position_name="Teacher 1",
+        position_type="Teacher",
+        status="need_now",
+    )
+
+
 def test_independent_machine_events_survive_dropbox_merge(tmp_path: Path) -> None:
     admin_dir = tmp_path / "admin" / "staffing_change_events"
     director_dir = tmp_path / "director" / "staffing_change_events"
@@ -117,8 +127,8 @@ def test_simultaneous_admin_and_director_changes_converge_after_dropbox_merge(tm
     director_assignment = admin_store.seed_assignment(
         school="Palmdale",
         classroom="Harmony",
-        position_name="Aide 1",
-        position_type="Aide",
+        position_name="Teacher 1",
+        position_type="Teacher",
     )
     director_db.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(admin_db, director_db)
@@ -415,8 +425,8 @@ def test_admin_change_replays_once_into_school_database(tmp_path: Path) -> None:
     assignment_id = admin_store.seed_assignment(
         school="Palmdale",
         classroom="Tranquility",
-        position_name="Aide 1",
-        position_type="Aide",
+        position_name="Teacher 1",
+        position_type="Teacher",
     )
     shutil.copy2(admin_path, director_path)
     stage = StaffingChangeStage(tmp_path / "staffing_change_events")
@@ -515,8 +525,8 @@ def test_assignment_detail_change_replays_all_fields(tmp_path: Path) -> None:
     assignment_id = admin_store.seed_assignment(
         school="Palmdale",
         classroom="Tranquility",
-        position_name="Aide 1",
-        position_type="Aide",
+        position_name="Teacher 1",
+        position_type="Teacher",
     )
     shutil.copy2(admin_path, director_path)
     stage = StaffingChangeStage(tmp_path / "staffing_change_events")
@@ -560,6 +570,7 @@ def test_completed_director_interview_replays_by_history_id(tmp_path: Path) -> N
     director_path = tmp_path / "staffing_dashboard_palmdale.sqlite3"
     admin_store = StaffingStore(admin_path)
     admin_store.initialize()
+    _seed_offer_slot(admin_store)
     admin_referral = StaffingService(admin_store).upsert_director_candidate_referral(
         history_id="hist-123",
         candidate_name="Candidate One",
@@ -606,6 +617,7 @@ def test_acknowledged_director_interview_self_repairs_missing_destination(tmp_pa
     director_path = tmp_path / "staffing_dashboard_palmdale.sqlite3"
     admin_store = StaffingStore(admin_path)
     admin_store.initialize()
+    _seed_offer_slot(admin_store)
     referral = StaffingService(admin_store).upsert_director_candidate_referral(
         history_id="hist-repair",
         candidate_name="Candidate Repair",
@@ -655,6 +667,7 @@ def test_acknowledged_director_interview_self_repair_defers_when_destination_is_
     director_path = tmp_path / "staffing_dashboard_palmdale.sqlite3"
     admin_store = StaffingStore(admin_path)
     admin_store.initialize()
+    _seed_offer_slot(admin_store)
     referral = StaffingService(admin_store).upsert_director_candidate_referral(
         history_id="hist-locked-repair",
         candidate_name="Candidate Locked Repair",
@@ -698,6 +711,7 @@ def test_acknowledged_director_interview_repairs_partial_destination_contact(tmp
     director_path = tmp_path / "staffing_dashboard_palmdale.sqlite3"
     admin_store = StaffingStore(admin_path)
     admin_store.initialize()
+    _seed_offer_slot(admin_store)
     referral = StaffingService(admin_store).upsert_director_candidate_referral(
         history_id="hist-contact-repair",
         candidate_name="Candidate Contact Repair",
@@ -759,6 +773,7 @@ def test_acknowledged_director_interview_records_proof_without_duplicate_replay(
     director_path = tmp_path / "staffing_dashboard_palmdale.sqlite3"
     admin_store = StaffingStore(admin_path)
     admin_store.initialize()
+    _seed_offer_slot(admin_store)
     referral = StaffingService(admin_store).upsert_director_candidate_referral(
         history_id="hist-proof-repair",
         candidate_name="Candidate Proof Repair",
@@ -824,6 +839,7 @@ def test_completed_director_interview_replay_preserves_typed_contact_for_hire(tm
     director_path = tmp_path / "staffing_dashboard_palmdale.sqlite3"
     admin_store = StaffingStore(admin_path)
     admin_store.initialize()
+    _seed_offer_slot(admin_store)
     admin_referral = StaffingService(admin_store).upsert_director_candidate_referral(
         history_id="hist-contact-replay",
         candidate_name="Candidate Contact",

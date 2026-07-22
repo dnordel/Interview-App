@@ -2,8 +2,8 @@ module:
   name: staffing_store
   language: python
   path: src/staffing_store.py
-  version: 0.21.0
-  description: SQLite persistence for staffing schools, classrooms, people including optional units, active status, role, current assignment summary, and permit effective-date/documentation/managed-path metadata, service-backed assignment creation and mistaken-position soft deletion, assignments with shift metadata, workbook display metadata, assignment history dashboard records, director candidate referral/interview completion and dismissal records, atomic staged-change destination proofs, Dropbox-visible edit locking, pending operation queueing, required staffing indexes, and deterministic seed imports.
+  version: 0.21.1
+  description: SQLite persistence for staffing schools, classrooms, people including optional units, active status, role, current assignment summary, and permit effective-date/documentation/managed-path metadata, Offer Pending history linkage, service-backed assignment creation and mistaken-position soft deletion, assignments with shift metadata, workbook display metadata, assignment history dashboard records, director candidate referral/interview completion and dismissal records, atomic staged-change destination proofs, Dropbox-visible edit locking, pending operation queueing, required staffing indexes, Aide-to-Teacher migration, and deterministic seed imports.
 functions: []
 classes:
 - name: StaffingEditLock
@@ -38,7 +38,7 @@ classes:
     inputs: {}
     returns:
       type: None
-    side_effects: Creates staffing tables/indexes, including durable staged-change destination proofs, when missing and migrates workbook display, shift metadata, and person permit metadata columns including permit_document_path for existing databases; concurrent initializers tolerate only verified duplicate-column migration races and re-raise other SQL failures.
+    side_effects: Creates staffing tables/indexes, including durable staged-change destination proofs, when missing; adds Offer Pending history linkage; migrates active Aide positions/people to uniquely named Teacher records without renaming existing Teacher slots or rewriting assignment history; and tolerates only verified duplicate-column races.
   - name: enqueue_pending_operation
     inputs:
       operation:
@@ -457,6 +457,10 @@ classes:
         type: str
         required: false
         default: pending_owner_approval
+      reserve_offer_pending:
+        type: bool
+        required: false
+        default: false
       now:
         type: str
         required: true
@@ -465,7 +469,7 @@ classes:
     exceptions:
     - ValueError
     - StaffingEditLock
-    side_effects: Inserts or updates one completed director interview with its exact teacher offer position, captures initial-report score/outcome, and appends immutable director-interview version/audit rows without mutating assignments, classrooms, people, or assignment_history.
+    side_effects: Inserts or updates one completed director interview with its exact teacher offer position, captures initial-report score/outcome, and appends immutable version/audit rows; when requested, the same transaction selects the first ordered Need Now classroom slot, ensures a Teacher candidate profile, and marks it Offer Pending with stable history linkage; unavailable slots roll back every write.
   - name: list_change_delivery_proof_ids
     inputs:
       operation: {type: str, required: true}

@@ -23,7 +23,7 @@ def _page(tmp_path: Path):
     service = StaffingService(store)
     service.add_person(
         name="Nina Patel",
-        role="Aide",
+        role="Teacher",
         permit_status="permit_in_process",
         units=5,
     )
@@ -57,7 +57,7 @@ def test_edit_person_button_opens_populated_dialog_and_saves_changes(tmp_path: P
     permit = dialog.findChild(qt_widgets.QComboBox, "StaffingV2EditPersonPermit")
     units = dialog.findChild(qt_widgets.QLineEdit, "StaffingV2EditPersonUnits")
     assert name.text() == "Nina Patel"
-    assert role.currentText() == "Aide"
+    assert role.currentText() == "Teacher"
     assert permit.currentText() == "Permit in Process"
     assert units.text() == "5"
 
@@ -278,7 +278,7 @@ def test_mark_coming_select_existing_person_popup_fills_candidate_fields(tmp_pat
     app.processEvents()
 
     assert coming.findChild(qt_widgets.QLineEdit, "StaffingV2ComingFullName").text() == "Nina Patel"
-    assert coming.findChild(qt_widgets.QComboBox, "StaffingV2ComingRole").currentText() == "Aide"
+    assert coming.findChild(qt_widgets.QComboBox, "StaffingV2ComingRole").currentText() == "Teacher"
     assert selector.isVisible() is False
     coming.close()
     page.widget.close()
